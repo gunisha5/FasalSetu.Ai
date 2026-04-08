@@ -1,89 +1,89 @@
-# AI-Powered Crop Insurance & Damage Assessment Implementation Plan
+# FasalSetu.Ai: Foolproof Implementation Strategy
 
-## Project Overview
-This project aims to build a multi-spectral satellite-driven crop damage assessment platform using AI. It evaluates the health of crops by analyzing satellite data and provides an automated or semi-automated system for processing and validating crop insurance claims. 
+This document outlines the master technical strategy and step-by-step roadmap for building the FasalSetu.Ai crop damage assessment system. 
 
-The architecture involves fetching satellite imagery, feeding it into a Machine Learning pipeline for damage assessment, and processing those results via a robust backend connected to a user-friendly frontend dashboard.
+## The Philosophy: "Risk-First" Development
 
-## Proposed Tech Stack
-
-### Backend & Database (Core Application)
-- **Framework**: Spring Boot (Java) - Excellent for complex business rules, user management, and serving the frontend application.
-- **Database**: MySQL - For relational data such as Users, Insurance Policies, Farms, and Claim records. MySQL's Spatial Data Types will be utilized to store and query farm boundaries (GeoJSON polygons).
-- **Architecture**: A RESTful architecture handling requests from the frontend, reading/writing to MySQL, and orchestrating requests to the Python ML Microservice.
-
-### Data Engineering & ML (Processing Microservice)
-Since AI and geospatial operations are best handled in Python, this will run as an entirely separate microservice.
-- **Microservice Framework**: FastAPI or Flask (Python) to expose inference endpoints.
-- **Data Source**: Sentinel-2 imagery (via Google Earth Engine or Copernicus API).
-- **Geospatial Processing**: `rasterio`, `geopandas`, `xarray`.
-- **Machine Learning**: `PyTorch` or `TensorFlow` for Spatio-temporal Deep Learning to assess crop damage based on vegetation indices (NDVI, NDWI).
-
-### Frontend & Dashboard
-- **Framework**: React.js / Next.js
-- **Mapping**: Mapbox GL JS or Leaflet (via React Leaflet) for visualizing satellite imagery, heatmaps, and farm boundaries.
-- **Styling**: Tailwind CSS & Shadcn UI (for a clean, modern dashboard interface).
+> [!CAUTION]
+> **Why AI First?**
+> The sole value of FasalSetu relies on the accuracy of its Deep Learning model. If the AI cannot predict crop damage from satellites, the web app and database are useless. Therefore, we **start with Phase 1 (The ML Pipeline)**. We validate the hardest technical challenge before writing a single line of backend Java or frontend React code.
 
 ---
 
-## User Review Required
+## Technical Stack & Tooling
 
-> [!WARNING]  
-> Please review the Open Questions below. The availability of satellite data and what ML models are feasible depends heavily on your answers.
-
-## Proposed Architecture Breakdown
-
-### 1. Spring Boot Backend Application (`/backend`)
-- **Controllers**: API endpoints (`/api/claims`, `/api/farms`, etc.).
-- **Services**: Business logic. An `InsuranceDecisionService` will evaluate the damage scores returned by the AI microservice and determine payout eligibility based on policy rules.
-- **Repositories**: Spring Data JPA to interface with MySQL.
-- **Entities**: JPA models mapping to MySQL tables (`User`, `Farm`, `Policy`, `Claim`).
-
-### 2. Python ML Microservice (`/ml-service`)
-- Python API waiting for requests like: "Assess damage for Farm Polygon X between Date Y and Date Z".
-- Python logic then queries Google Earth Engine, runs deep learning inference to assess crop stress, and returns a JSON response containing damage percentage/classification back to Spring Boot.
-
-### 3. React Frontend (`/frontend`)
-- Interacts purely with the Spring Boot backend. 
-- Renders an interactive map and temporal charts for policyholders and insurers.
+| Component | Technology / Tool | Purpose |
+| :--- | :--- | :--- |
+| **Data Labeling** | `Pandas`, `Numpy` (Offline Local) | Formatting ground-truth crop yields into ML targets. |
+| **Foreign Datasets** | `Kaggle`, `Zenodo` (Online) | Sourcing large labeled flood/healthy datasets for pre-training. |
+| **Indian Datasets**| `earthengine-api` (Google Earth Engine) | Cloud-sourcing raw Sentinel-2 Indian satellite imagery. |
+| **Deep Learning** | `PyTorch` (Offline Local) | Building the hybrid CNN + LSTM spatial-temporal model. |
+| **ML Microservice** | `FastAPI`, `Uvicorn` (Offline Local) | Serving the trained PyTorch model as an internal API. |
+| **Main Backend** | `Java Spring Boot` (Offline Local) | Handling business logic, authentication, and SQL interactions. |
+| **Database** | `MySQL` (Offline Local) | Storing user identities, GeoJSON boundaries, and insurance claims. |
+| **Frontend** | `React` + `Vite` + `TailwindCSS` | Building an interactive, premium user interface. |
+| **Map Rendering** | `Mapbox GL JS` / `Leaflet` | Displaying damage heatmaps visually in the browser. |
 
 ---
 
-## Project Phases
+## Phase 1: Deep Learning & Data Pipeline (Active)
+*Goal: Prove the AI can ingest satellite data and accurately predict crop damage.*
 
-### Phase 1: Spring Boot, MySQL & Core Domain (Foundation)
-*Focus: Build the data models and core business logic first to establish the backbone of the platform.*
-- Design and set up MySQL database schemas (Users, Farm Plots, Policies, Claims).
-- Initialize the Java Spring Boot project.
-- Build REST APIs for CRUD operations. 
-- Create a mocked interface for the AI service so the backend can process mock "Damage Scores" to test the Insurance Engine logic.
+### Phase 1.0: Indian Ground Truth Replacements (Status Check)
+To avoid manual PDF parsing, we are strategically substituting the original manual reports with highly structured data:
+- **PMFBY Dataset Replacement:** Use the local `ICRISAT District-Level Data.csv` to act as the gold-standard proxy for verified yield and general claim statuses. ✅
+- **IMD Dataset Replacement:** Use the new "Drought" dataset currently being downloaded (e.g. Christ University Kaggle Climate Data) containing programmatic Drought/SPEI indexes. ✅
+- **NDMA/NVMB Dataset Replacement:** *(Status: Pending Search)*. We need a clean programmatic source for flood labels in India before finalizing the flood aspect. ⏳
 
-### Phase 2: Frontend Dashboard & Map Integration
-*Focus: Build the user interface using mocked data from Phase 1 to validate the end-to-end user experience.*
-- Initialize the React.js frontend interface with Tailwind CSS.
-- Implement an interactive Mapbox/Leaflet map component for users to draw or view farm boundaries.
-- Hook up the frontend map and claim views to the Spring Boot REST APIs so the core user flows work perfectly.
+### Phase 1.1: Pre-Training on Foreign Data (Immediate Next Step)
+- **Datasets Needed:** 
+  1. **STURM-Flood** (~50GB via Zenodo) - Teaches the CNN what flooded agricultural land looks like globally.
+  2. **HAD-FCDR25** (~8GB via Zenodo) - Teaches the model specific flood-damaged crop textures.
+  3. **Sen4AgriNet** (~30GB subset) - Teaches the LSTM the temporal "bell curve" of a universally healthy crop growing season.
+- **What is happening:** CNN+LSTM architectures require massive data to learn basic physics (e.g. what is water vs soil). Instead of burning Indian data on basics, we train the model offline heavily on these massive labeled global datasets first.
+- **Tools:** `PyTorch`.
 
-### Phase 3: Python AI Microservice (Data Acquisition & ML)
-*Focus: Build out the actual geospatial intelligence now that the platform can consume its outputs.*
-- Set up the Python FastAPI/Flask microservice.
-- Implement Google Earth Engine (GEE) scripts to pull Sentinel-2 multi-spectral data for regions of interest.
-- Develop the Spatio-temporal ML models (or rule-based NDVI calculations) for calculating crop damage.
+### Phase 1.2: Spatio-Temporal Imagery Extraction (For Indian Fine-Tuning)
+- **Datasets Needed:** Google Earth Engine (Sentinel-2 Harmonized Surface Reflectance).
+- **What is happening:** Taking our finalized labels from Phase 1.0 (once the flood dataset is found and merged), we will write a Python script that asks Google Earth Engine to download 8 months of Sentinel-2 satellite images representing those exact Indian districts.
+- **Tools:** `earthengine-api`, `geopandas`.
+- **Output:** Local folder of PyTorch-ready files containing 4D vectors: `(Time, Channels, Height, Width)`.
 
-### Phase 4: Full System Integration
-*Focus: Replace mocks with real intelligence.*
-- Connect the Spring Boot backend to the live Python AI microservice (replacing the mocked interface).
-- End-to-end verification of drawn farm boundaries triggering actual GEE data fetches -> Model Inference -> Real claim payouts on the dashboard.
+### Phase 1.3: Indian Model Fine-Tuning
+- **What is happening:** The model (already hyper-smart from Phase 1.1 pre-training) is now fed our Indian GEE images (from 1.2) paired with our Indian labels (from 1.0). This "Fine-Tuning" adapts the model specifically to Indian monsoon patterns and Indian farm geographics. 
+- **Output:** A finalized, trained weights file (`fasalsetu_model_vFINAL.pth`).
 
 ---
 
-## Open Questions
+## Phase 2: MLOps & The Inference Engine
+*Goal: Make the Python model accessible to the rest of the application.*
 
-1. **AI Microservice Hosting**: Are you comfortable running a secondary Python process alongside the Spring Boot application? (This is standard practice for AI web applications).
-2. **Ground Truth Data**: Do you have access to real insurance claims (affected areas mapped with GPS) to train an advanced Deep Learning model, or do you want to start with a Rule-Based threshold approach utilizing vegetation indices (NDVI)?
-3. **Database Setup**: Do you have a local instance of MySQL installed and running to connect Spring Boot to, or do we need to set that up via Docker?
+### Phase 2.1: FastAPI Server
+- **What is happening:** We will wrap the PyTorch model in a lightweight `FastAPI` web server running internally on Port `8000`.
+- **How it works:** Spring Boot will send an HTTP POST request containing `{"latitude": X, "longitude": Y, "date": Z}` to FastAPI. FastAPI fetches real-time satellite imagery for that GPS location from GEE, runs it through the model, and returns `{"damage_status": "Drought"}`.
 
-## Verification Plan
-- **Setup Check**: Run both the Spring Boot app and Python ML service locally. Verify they can communicate.
-- **Database Hookup**: Ensure that adding a new "Farm" via REST API correctly persists to your local MySQL database.
-- **End-to-End**: A front-end request triggers a mocked AI assessment through Spring Boot and accurately displays an overlay on the frontend map.
+---
+
+## Phase 3: The Claim Management Backend
+*Goal: The business infrastructure.*
+
+### Phase 3.1: Spring Boot & MySQL Setup
+- **What is happening:** Create the main application server. Connect it to MySQL.
+- **Database Architecture:**
+  - `Users` (Farmers, Insurance Agents)
+  - `Farms` (GeoJSON coordinates representing a farmer's plot)
+  - `Claims` (A track record linking a farm to an auto-generated model payout score).
+
+### Phase 3.2: AI Orchestration Logic
+- **What is happening:** Spring Boot hits the FastAPI service when an insurance claim is filed. It interprets the AI's signal and checks the database rules to approve or deny a crop insurance payout automatically.
+
+---
+
+## Phase 4: Geospatial Frontend
+*Goal: A stunning, interactive interface to WOW users.*
+
+### Phase 4.1: React UI Creation
+- **What is happening:** Designing a React interface equipped with modern aesthetics (Dark modes, glassmorphism, fluid animations). We will avoid generic templates and ensure it looks like premium specialized software.
+
+### Phase 4.2: Mapbox Dashboard
+- **What is happening:** Building the interactive map. When an Insurance Agent clicks on a specific farm boundary on the map, the React UI queries the Spring Boot backend, hitting the AI pipeline, and visually paints the farm red/green depending on the damage rating.
