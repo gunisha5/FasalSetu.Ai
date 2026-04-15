@@ -35,13 +35,31 @@ To avoid manual PDF parsing, we are strategically substituting the original manu
 - **IMD Dataset Replacement:** Use the new "Drought" dataset currently being downloaded (e.g. Christ University Kaggle Climate Data) containing programmatic Drought/SPEI indexes. ✅
 - **NDMA/NVMB Dataset Replacement:** *(Status: Pending Search)*. We need a clean programmatic source for flood labels in India before finalizing the flood aspect. ⏳
 
-### Phase 1.1: Pre-Training on Foreign Data (Immediate Next Step)
-- **Datasets Needed:** 
-  1. **STURM-Flood** (~50GB via Zenodo) - Teaches the CNN what flooded agricultural land looks like globally.
-  2. **HAD-FCDR25** (~8GB via Zenodo) - Teaches the model specific flood-damaged crop textures.
-  3. **Sen4AgriNet** (~30GB subset) - Teaches the LSTM the temporal "bell curve" of a universally healthy crop growing season.
-- **What is happening:** CNN+LSTM architectures require massive data to learn basic physics (e.g. what is water vs soil). Instead of burning Indian data on basics, we train the model offline heavily on these massive labeled global datasets first.
-- **Tools:** `PyTorch`.
+### Phase 1.1: PyTorch Spatio-Temporal Model Pre-Training (Immediate Next Step)
+
+We will now construct the underlying ML Architecture utilizing the extracted global datasets.
+
+#### 1. Pivot Strategy (Why Sen4AgriNet is No Longer Required)
+- **The Pivot:** Because Sen4AgriNet introduced access restrictions, we are dropping it entirely. 
+- **The Solution:** The **STURM-Flood** and **HAD-FCDR25** datasets contain "Healthy/Non-Flooded" pixels right alongside the flooded ones. We will extract our "Healthy" baseline samples directly from these datasets instead. This is mathematically identical but simplifies our dataloader since we only process two datasets instead of three.
+
+#### 2. ML Environment Setup (`.venv`)
+- **Install Core Libraries:** `torch`, `torchvision`, `rasterio` (for reading `.tif` GeoTIFFs), `geopandas`, and `scikit-learn` in the local Python environment.
+
+#### 2. Spatio-Temporal Deep Learning Architecture (`scripts/core_ml/model.py`)
+- **The CNN (Spatial):** A 2D Convolutional Neural Network. It will read 6 feature bands (`B2`, `B3`, `B4`, `B8`, and derived `NDVI`, `NDWI`) from a cropped satellite patch (e.g., $64\times64$ pixels) to identify visual textures like standing water or healthy vegetation.
+- **The LSTM (Temporal):** The CNN output vector is passed into an LSTM which observes how these visual features evolve over a sequence of months (Time Steps). 
+- **Classifier Head:** A final Linear layer outputting class probabilities (Healthy vs Flood vs Drought).
+
+#### 3. Custom GeoTIFF DataLoader (`scripts/core_ml/dataset.py`)
+- We will build a PyTorch `Dataset` component that directly reads from `data/STURM_Flood_Subset/extracted/Dataset/Sentinel2` and matches the patches to labels located in `Sentinel2_metadata.csv`.
+- It will perform live dynamic calculation of the NDVI & NDWI indices directly from the raw multispectral bands to minimize storage bloat.
+
+#### 4. Pre-Training Loop (`scripts/core_ml/train.py`)
+- We will write the training loop using Binary Cross Entropy (BCE) focusing on detecting Flood vs Non-Flood patterns.
+
+> [!IMPORTANT]
+> Does this architectural approach look good to you? Do you want me to proceed with setting up the virtual environment (`requirements.txt`) and writing the PyTorch codebase?
 
 ### Phase 1.2: Spatio-Temporal Imagery Extraction (For Indian Fine-Tuning)
 - **Datasets Needed:** Google Earth Engine (Sentinel-2 Harmonized Surface Reflectance).
