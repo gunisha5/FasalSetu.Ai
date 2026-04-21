@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ClipboardList, Plus, FileX, ArrowRight } from 'lucide-react';
-import { claimApi } from '../../../utils/apiClient';
-import type { Claim } from '../../../utils/apiClient';
+import { claimApi, farmApi } from '../../../utils/apiClient';
+import type { Claim, Farm } from '../../../utils/apiClient';
 import { useAuthStore } from '../../../store/authStore';
 import LoadingSkeleton from '../../../components/LoadingSkeleton';
 import ErrorBanner from '../../../components/ErrorBanner';
@@ -16,11 +16,23 @@ export default function ClaimList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [farms, setFarms] = useState<Record<number, string>>({});
+
   useEffect(() => {
-    claimApi.getAll(farmerId)
-      .then(res => setClaims(res.data))
-      .catch(() => setError('Could not load claims. Is the backend running?'))
-      .finally(() => setLoading(false));
+    setLoading(true);
+    Promise.all([
+      claimApi.getAll(farmerId),
+      farmApi.getAll(farmerId)
+    ]).then(([claimsRes, farmsRes]) => {
+      setClaims(claimsRes.data);
+      const farmMap: Record<number, string> = {};
+      farmsRes.data.forEach(f => {
+        if (f.id) farmMap[f.id] = f.farmName;
+      });
+      setFarms(farmMap);
+    })
+    .catch(() => setError('Could not load claims. Is the backend running?'))
+    .finally(() => setLoading(false));
   }, [farmerId]);
 
   const statusColor = (s?: string) => {
@@ -71,7 +83,10 @@ export default function ClaimList() {
                 className="bg-surface-card border border-white/5 rounded-3xl p-5 shadow-lg flex items-center gap-4 hover:bg-white/10 transition-colors group">
                 <div className={`p-4 rounded-2xl ${c.bg} ${c.dot}`}><ClipboardList size={24} /></div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-lg">{claim.calamityType} Damage</h3>
+                  <h3 className="font-bold text-lg">
+                    {claim.calamityType} Damage 
+                    <span className="text-gray-500 font-normal ml-2">• {farms[claim.farmId!] || 'Field #' + claim.farmId}</span>
+                  </h3>
                   <p className={`text-sm font-semibold ${c.dot}`}>{claim.status?.replace('_', ' ')}</p>
                 </div>
                 <ArrowRight size={20} className="text-gray-600 group-hover:text-white transition-colors" />

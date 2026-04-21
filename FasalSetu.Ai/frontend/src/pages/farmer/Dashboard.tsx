@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Sprout, Map, AlertTriangle, ArrowRight, Wallet } from 'lucide-react';
+import { Sprout, Map, AlertTriangle, ArrowRight, Wallet, ClipboardList } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useEffect, useState } from 'react';
 import { farmApi } from '../../utils/apiClient';
@@ -21,68 +21,77 @@ export default function Dashboard() {
   }, [farmerId]);
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
-      {/* Header */}
-      <div className="flex justify-between items-center bg-brand-500/10 p-6 rounded-3xl border border-brand-500/20 glass">
-        <div>
-          <h1 className="text-2xl font-bold mb-1">Welcome back, {user?.fullName?.split(' ')[0] || 'Farmer'}</h1>
-          <p className="text-gray-400 text-sm">Your farms are looking healthy today.</p>
+      {/* Welcome Header */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-brand-600 to-brand-400 p-8 rounded-[2rem] text-white shadow-xl shadow-brand-500/20">
+        <div className="relative z-10">
+          <h1 className="text-3xl font-black mb-2">Namaste, {user?.fullName?.split(' ')[0] || 'Farmer'}!</h1>
+          <p className="text-brand-50 opacity-90 font-medium">Your farm profile is verified and active.</p>
         </div>
-        <div className="hidden sm:flex bg-brand-500/20 p-4 rounded-2xl">
-          <Sprout className="text-brand-400" size={32} />
-        </div>
+        <Sprout className="absolute -right-4 -bottom-4 text-white/10 w-48 h-48 -rotate-12" strokeWidth={1} />
       </div>
 
+      {/* Main Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Quick Stats */}
-        <div className="bg-surface-card border border-white/5 p-6 rounded-3xl flex items-center justify-between shadow-lg">
-          <div>
-            <p className="text-gray-400 text-sm mb-1">Total Area</p>
-            <p className="text-3xl font-bold">{totalArea} <span className="text-base text-gray-500">Ha</span></p>
+        
+        {/* Total Area Card */}
+        <div className="bg-white border border-surface-border p-6 rounded-[2rem] flex items-center justify-between shadow-premium transition-transform hover:scale-[1.02] cursor-default">
+          <div className="space-y-1">
+            <p className="text-text-secondary text-xs font-bold uppercase tracking-widest">Total Land</p>
+            <p className="text-4xl font-black text-text-main leading-none">{totalArea} <span className="text-lg font-bold text-brand-600">Ha</span></p>
           </div>
-          <Map className="text-gray-600" size={32} />
+          <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600">
+            <Map size={32} strokeWidth={2.5} />
+          </div>
         </div>
         
-        <div className="bg-surface-card border border-white/5 p-6 rounded-3xl flex items-center justify-between shadow-lg">
-          <div>
-            <p className="text-gray-400 text-sm mb-1">Active Payouts</p>
-            <p className="text-3xl font-bold">₹0</p>
+        {/* Pending Payout Card */}
+        <div className="bg-white border border-surface-border p-6 rounded-[2rem] flex items-center justify-between shadow-premium transition-transform hover:scale-[1.02] cursor-default">
+          <div className="space-y-1">
+            <p className="text-text-secondary text-xs font-bold uppercase tracking-widest">Wallet</p>
+            <p className="text-4xl font-black text-text-main leading-none">₹0</p>
           </div>
-          <Wallet className="text-gray-600" size={32} />
+          <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
+            <Wallet size={32} strokeWidth={2.5} />
+          </div>
         </div>
 
-        {/* Primary Action Button */}
+        {/* Action Button - File Claim */}
         <div className="md:col-span-2 lg:col-span-1">
-          <Link to="/farmer/claims/new" className="h-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 p-6 rounded-3xl flex items-center justify-between transition-colors shadow-lg group">
-             <div>
-               <p className="text-red-400 font-bold text-lg mb-1">File New Claim</p>
-               <p className="text-red-400/70 text-sm">Calamity occurred?</p>
+          <Link to="/farmer/claims/new" className="h-full bg-red-500 hover:bg-red-600 p-6 rounded-[2rem] flex items-center justify-between transition-all shadow-xl shadow-red-500/20 group active:scale-[0.98]">
+             <div className="text-white">
+               <p className="font-black text-2xl mb-1">File Claim</p>
+               <p className="text-red-50/80 text-sm font-medium">Crop damaged?</p>
              </div>
-             <AlertTriangle className="text-red-400 group-hover:scale-110 transition-transform" size={32} />
+             <AlertTriangle className="text-white group-hover:rotate-12 transition-transform" size={40} strokeWidth={2.5} />
           </Link>
         </div>
       </div>
 
-      {/* Recent Claims Section */}
-      <div className="bg-surface-card border border-white/5 rounded-3xl p-6 shadow-lg">
-         <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold">Recent Claims</h2>
-            <Link to="/farmer/claims" className="text-brand-400 text-sm flex items-center gap-1 hover:text-brand-300">
-              View All <ArrowRight size={16} />
+      {/* Recent Activity Section */}
+      <div className="bg-white border border-surface-border rounded-[2.5rem] p-8 shadow-premium relative">
+         <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-black text-text-main">Recent Status</h2>
+            <Link to="/farmer/claims" className="bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1 hover:bg-brand-100 transition-colors">
+              History <ArrowRight size={16} strokeWidth={3} />
             </Link>
          </div>
          
-         <div className="text-center py-10">
-            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ClipboardList className="text-gray-600" size={24} />
+         <div className="text-center py-16 flex flex-col items-center">
+            <div className="w-24 h-24 bg-surface-bg rounded-[2rem] flex items-center justify-center mb-6 ring-4 ring-white shadow-inner-soft">
+              <ClipboardList className="text-text-secondary" size={40} strokeWidth={2} />
             </div>
-            <p className="text-gray-400">No active or recent claims filed.</p>
+            <h3 className="text-lg font-bold text-text-main mb-2">All Safe!</h3>
+            <p className="text-text-secondary max-w-[200px] text-sm leading-relaxed">No active claims or damage alerts in your area.</p>
          </div>
+
+         {/* PWA Friendly - Add Link to Quick Task */}
+         <Link to="/farmer/farms/new" className="mt-8 w-full py-4 bg-surface-bg border border-dashed border-surface-border rounded-2xl flex items-center justify-center gap-2 text-text-secondary font-bold hover:bg-white hover:border-brand-300 hover:text-brand-600 transition-all">
+            <Sprout size={18} /> Register Another Field
+         </Link>
       </div>
     </div>
   );
 }
 
-// Temporary import for the icon used inside
-import { ClipboardList } from 'lucide-react';

@@ -43,6 +43,16 @@ export interface Claim {
   calamityType: string;
   status?: string;
   aiDamageScore?: number;
+  aiConfidence?: number;
+  aiReasoning?: string;
+  deltaNdvi?: number;
+  deltaNdwi?: number;
+  deltaSar?: number;
+  floodProbability?: number;
+  droughtProbability?: number;
+  dateOfLoss?: string;
+  visualFloodScore?: number;
+  visualDroughtScore?: number;
 }
 
 export const claimApi = {

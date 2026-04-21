@@ -44,12 +44,29 @@ export default function FarmDetail() {
     );
   }
 
-  const polygonData: [number, number][] = [
-    [20.593, 78.962],
-    [20.594, 78.962],
-    [20.594, 78.963],
-    [20.593, 78.963]
-  ];
+  const getPolygonData = (): [number, number][] => {
+    if (!farm?.boundaryGeoJson) return [];
+    try {
+      const geoJson = typeof farm.boundaryGeoJson === 'string' 
+        ? JSON.parse(farm.boundaryGeoJson) 
+        : farm.boundaryGeoJson;
+      
+      // Handle standard GeoJSON structure
+      const coords = geoJson.geometry?.coordinates?.[0] || geoJson.coordinates?.[0];
+      if (coords && Array.isArray(coords)) {
+        return coords.map((c: any) => [c[1], c[0]]); // Swap [lng, lat] to [lat, lng]
+      }
+    } catch (e) {
+      console.error('Error parsing farm boundary:', e);
+    }
+    return [];
+  };
+
+  const polygonData = getPolygonData();
+  const hasBoundary = polygonData.length > 0;
+  
+  // Default fallback center if no boundary
+  const mapCenter: [number, number] = hasBoundary ? polygonData[0] : [20.5937, 78.9629];
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-10">
@@ -123,13 +140,15 @@ export default function FarmDetail() {
             </div>
             
             <MapContainer 
-              bounds={polygonData} 
+              {...(hasBoundary ? { bounds: polygonData } : { center: mapCenter, zoom: 13 })}
               style={{ height: '100%', width: '100%', zIndex: 10 }}
               zoomControl={true}
               scrollWheelZoom={false}
             >
               <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
-              <Polygon positions={polygonData} color="#10b981" fillColor="#10b981" fillOpacity={0.4} weight={3} />
+              {hasBoundary && (
+                <Polygon positions={polygonData} color="#10b981" fillColor="#10b981" fillOpacity={0.4} weight={3} />
+              )}
             </MapContainer>
           </div>
         </div>

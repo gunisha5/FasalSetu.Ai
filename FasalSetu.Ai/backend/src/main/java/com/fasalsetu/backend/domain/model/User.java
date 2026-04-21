@@ -25,7 +25,7 @@ public class User {
     private String role; 
 
     @Column(name = "is_email_verified")
-    private boolean isEmailVerified = false;
+    private Boolean isEmailVerified = false;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -47,6 +47,6 @@ public class User {
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
     
-    public boolean isEmailVerified() { return isEmailVerified; }
-    public void setEmailVerified(boolean emailVerified) { isEmailVerified = emailVerified; }
+    public boolean isEmailVerified() { return isEmailVerified != null ? isEmailVerified : false; }
+    public void setEmailVerified(Boolean emailVerified) { isEmailVerified = emailVerified; }
 }

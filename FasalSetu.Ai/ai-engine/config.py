@@ -31,6 +31,7 @@ TRAINING_CSV: Path      = BASE_DIR / "data" / "training_features.csv"
 # ── Google Earth Engine ───────────────────────────────────────────────────────
 GEE_SERVICE_ACCOUNT: str    = os.getenv("GEE_SERVICE_ACCOUNT", "")
 GEE_KEY_FILE: str           = os.getenv("GEE_KEY_FILE", "")      # Path to SA JSON key
+GEE_PROJECT_ID: str         = os.getenv("GEE_PROJECT_ID", "ee-fasalsetu") # Your Cloud Project ID
 
 # ── GEE Query Windows (days) ──────────────────────────────────────────────────
 PRE_EVENT_DAYS: int     = int(os.getenv("PRE_EVENT_DAYS", "30"))   # Before claim_date
@@ -44,3 +45,23 @@ DROUGHT_NDVI_THRESHOLD: float   = float(os.getenv("DROUGHT_NDVI_THRESHOLD", "-0.
 N_ESTIMATORS: int   = int(os.getenv("RF_N_ESTIMATORS", "100"))
 TEST_SIZE: float    = float(os.getenv("RF_TEST_SIZE", "0.2"))
 RANDOM_STATE: int   = int(os.getenv("RF_RANDOM_STATE", "42"))
+
+# ── OpenWeatherMap — Weather Monitor ─────────────────────────────────────────
+# Get a free API key from https://openweathermap.org/api
+OPENWEATHER_API_KEY: str            = os.getenv("OPENWEATHER_API_KEY", "")
+WEATHER_API_TIMEOUT_SECS: int       = int(os.getenv("WEATHER_API_TIMEOUT_SECS", "8"))
+
+# Flood risk: rainfall in last 1 hour >= this value (mm) triggers flood signal
+WEATHER_FLOOD_RAIN_THRESHOLD_MM: float  = float(os.getenv("WEATHER_FLOOD_RAIN_THRESHOLD_MM", "4.0"))
+# Drought risk proxy: humidity <= this value AND rainfall ~0 triggers drought signal
+WEATHER_DROUGHT_HUMIDITY_MAX: int       = int(os.getenv("WEATHER_DROUGHT_HUMIDITY_MAX", "25"))
+# Drought: rainfall must be at or below this (mm/h) to be considered "dry"
+WEATHER_DROUGHT_RAIN_MAX_MM: float      = float(os.getenv("WEATHER_DROUGHT_RAIN_MAX_MM", "0.1"))
+
+# ── Weighted Scoring (Combined Confidence Engine) ─────────────────────────────
+# Weights MUST sum to 1.0. Tune via environment variables.
+WEIGHT_HISTORICAL: float    = float(os.getenv("WEIGHT_HISTORICAL", "0.15"))
+WEIGHT_WEATHER: float       = float(os.getenv("WEIGHT_WEATHER",    "0.20"))
+WEIGHT_SATELLITE: float     = float(os.getenv("WEIGHT_SATELLITE",  "0.30"))
+WEIGHT_ML: float            = float(os.getenv("WEIGHT_ML",         "0.15"))
+WEIGHT_VISUAL: float        = float(os.getenv("WEIGHT_VISUAL",     "0.20"))
