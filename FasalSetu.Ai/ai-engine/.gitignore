@@ -1,0 +1,26 @@
+# Python virtual environment
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pycache
+
+# Secrets — never commit
+.env
+secrets/
+*.json
+
+# ML model artefacts (regeneratable)
+models/*.pkl
+data/training_features.csv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
