@@ -1,7 +1,11 @@
 package com.fasalsetu.backend.controller;
 
+import com.fasalsetu.backend.domain.model.BankDetail;
 import com.fasalsetu.backend.domain.model.User;
+import com.fasalsetu.backend.dto.RegistrationRequest;
+import com.fasalsetu.backend.repository.BankDetailRepository;
 import com.fasalsetu.backend.repository.UserRepository;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,36 +23,45 @@ public class RegistrationController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    /**
-     * Self-registration endpoint used by the 3-step Registration Wizard.
-     * Creates or updates the user record from the wizard's final step.
-     */
+    @Autowired
+    private BankDetailRepository bankDetailRepository;
+
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody Map<String, String> payload) {
-        String email = payload.get("email");
-        String fullName = payload.get("fullName");
-        String password = payload.get("password");
-        String role = payload.getOrDefault("role", "FARMER");
-
-        if (email == null || password == null || fullName == null) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Email, password, and full name are required."));
-        }
-
-        if (userRepository.findByEmail(email).isPresent()) {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody RegistrationRequest payload) {
+        if (userRepository.findByEmail(payload.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Email already registered."));
+        }
+        if (userRepository.findByPhoneNumber(payload.getPhoneNumber()).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Phone number already registered."));
+        }
+        if (userRepository.findByAadhaarNumber(payload.getAadhaarNumber()).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Aadhaar number already registered."));
         }
 
         User user = new User();
-        user.setEmail(email);
-        user.setFullName(fullName);
-        user.setRole(role);
-        user.setPasswordHash(passwordEncoder.encode(password));
-        user.setEmailVerified(true); // Since they verified OTP before reaching here
-        userRepository.save(user);
+        user.setEmail(payload.getEmail());
+        user.setFullName(payload.getFullName());
+        user.setPhoneNumber(payload.getPhoneNumber());
+        user.setAadhaarNumber(payload.getAadhaarNumber());
+        user.setState(payload.getState());
+        user.setDistrict(payload.getDistrict());
+        user.setRole(payload.getRole() == null || payload.getRole().isBlank() ? "FARMER" : payload.getRole());
+        user.setPasswordHash(passwordEncoder.encode(payload.getPassword()));
+        user.setEmailVerified(true);
+        User savedUser = userRepository.save(user);
+
+        BankDetail bankDetail = new BankDetail();
+        bankDetail.setFarmerId(savedUser.getId());
+        bankDetail.setAccountHolder(payload.getAccountHolderName());
+        bankDetail.setBankName(payload.getBankName());
+        bankDetail.setAccountNumber(payload.getAccountNumber());
+        bankDetail.setIfscCode(payload.getIfscCode().toUpperCase());
+        bankDetailRepository.save(bankDetail);
 
         return ResponseEntity.ok(Map.of(
             "message", "Registration successful. You can now log in.",
-            "email", email
+            "email", savedUser.getEmail(),
+            "userId", savedUser.getId()
         ));
     }
 }

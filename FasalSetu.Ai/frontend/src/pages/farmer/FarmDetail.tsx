@@ -84,8 +84,8 @@ export default function FarmDetail() {
                  <CheckCircle size={12} /> Healthy
               </span>
             </div>
-            <p className="text-gray-400 text-sm flex items-center gap-1">
-              <MapIcon size={14} /> {farm.village}, {farm.state} • Survey #{farm.surveyNumber || 'N/A'}
+            <p className="text-gray-400 text-sm flex items-center gap-1 capitalize">
+              <MapIcon size={14} /> {farm.village}, {farm.state} • <span className="uppercase">Survey #{farm.surveyNumber || 'N/A'}</span>
             </p>
           </div>
         </div>
@@ -109,25 +109,26 @@ export default function FarmDetail() {
             <div className="space-y-4">
               <div>
                 <p className="text-xs text-gray-500 uppercase font-medium">Primary Crop</p>
-                <p className="font-semibold text-white">{farm.primaryCrop || 'Not Specified'}</p>
+                <p className="font-semibold text-text-main capitalize">{farm.primaryCrop || 'Not Specified'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 uppercase font-medium">Total Area</p>
-                <p className="font-semibold text-white">{farm.areaHectares} Hectares</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase font-medium">Soil Type</p>
-                <p className="font-semibold text-white">{farm.soilType || 'Loamy (Estimated)'}</p>
+                <p className="font-semibold text-text-main">{(farm.areaAcres || 0).toLocaleString()} Acres</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-brand-500/10 border border-brand-500/20 rounded-3xl p-6 shadow-[0_0_30px_rgba(16,185,129,0.05)]">
-             <div className="flex justify-between items-start mb-2">
-               <h3 className="font-semibold text-brand-400">Current AI Outlook</h3>
-               <TrendingUp className="text-brand-400" size={20} />
+          <div className="bg-brand-800 border border-brand-700 rounded-3xl p-6 shadow-[0_20px_40px_rgba(5,150,105,0.15)] relative overflow-hidden group">
+             <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-colors" />
+             <div className="flex justify-between items-start mb-4 relative z-10">
+               <h3 className="font-black text-white text-lg tracking-tight">Current AI Outlook</h3>
+               <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center text-white">
+                 <TrendingUp size={22} strokeWidth={2.5} />
+               </div>
              </div>
-             <p className="text-sm text-gray-300">Satellite indicates nominal vegetation index (NDVI: 0.72). No active drought or flood signatures detected in this parcel during the last 7 days.</p>
+             <p className="text-sm text-brand-50 font-medium leading-relaxed relative z-10 opacity-90">
+               Satellite indicates nominal vegetation index (NDVI: 0.72). No active drought or flood signatures detected in this parcel during the last 7 days.
+             </p>
           </div>
         </div>
 
@@ -136,7 +137,7 @@ export default function FarmDetail() {
           <div className="bg-surface-card border border-white/5 rounded-3xl overflow-hidden shadow-lg h-[400px] relative">
             <div className="absolute top-4 left-4 z-[400] bg-surface-dark/80 backdrop-blur border border-white/10 rounded-xl p-3 shadow-2xl">
               <p className="text-xs text-gray-400 font-medium mb-1 uppercase tracking-wider">Boundary Map</p>
-              <p className="font-bold text-white text-sm">{farm.areaHectares} Ha</p>
+              <p className="font-bold text-white text-sm">{(farm.areaAcres || 0).toLocaleString()} Ac</p>
             </div>
             
             <MapContainer 

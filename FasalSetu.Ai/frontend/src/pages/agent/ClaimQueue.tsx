@@ -71,7 +71,8 @@ export default function ClaimQueue() {
                         <span className="px-2 py-1 bg-white/10 rounded text-xs">{c.type}</span>
                      </td>
                      <td className="p-4">
-                        {c.aiScore > 0 ? (
+                        {(c.aiScore ?? 0) > 0 ? (
+
                            <div className="flex items-center gap-2 text-indigo-400">
                              <Cpu size={14} /> <span>{c.aiScore} / 100</span>
                            </div>

@@ -10,7 +10,7 @@ export default function EditFarm() {
   const navigate = useNavigate();
   
   const [form, setForm] = useState<Partial<Farm>>({
-    farmName: '', state: '', district: '', village: '', primaryCrop: '', areaHectares: undefined,
+    farmName: '', state: '', district: '', village: '', primaryCrop: '', areaAcres: undefined,
     surveyNumber: '', soilType: ''
   });
   const [loading, setLoading] = useState(true);
@@ -50,10 +50,10 @@ export default function EditFarm() {
 
   const field = (label: string, key: keyof Farm, type = 'text') => (
     <div className="space-y-1">
-      <label className="text-sm text-gray-300 ml-1">{label}</label>
+      <label className="text-sm text-slate-700 ml-1">{label}</label>
       <input
         type={type}
-        value={form[key] === undefined || (type === 'number' && isNaN(form[key] as any)) ? '' : (form[key] as any)}
+        value={form[key] === null || form[key] === undefined || (type === 'number' && isNaN(form[key] as any)) ? '' : (form[key] as any)}
         onChange={e => {
           const val = e.target.value;
           setForm({ 
@@ -63,7 +63,7 @@ export default function EditFarm() {
               : val 
           });
         }}
-        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
         required={['farmName', 'state', 'district', 'village'].includes(key as string)}
       />
     </div>
@@ -108,8 +108,7 @@ export default function EditFarm() {
           {field('Village', 'village')}
           {field('Survey Number', 'surveyNumber')}
           {field('Primary Crop', 'primaryCrop')}
-          {field('Area (Hectares)', 'areaHectares', 'number')}
-          {field('Soil Type (Optional)', 'soilType')}
+          {field('Area (Acres)', 'areaAcres', 'number')}
 
           <button
             type="submit"

@@ -26,7 +26,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const requestUrl = String(error.config?.url || '');
+    const isAuthFlowRequest = requestUrl.includes('/auth/send-otp')
+      || requestUrl.includes('/auth/verify-email')
+      || requestUrl.includes('/auth/register')
+      || requestUrl.includes('/auth/login');
+
+    if (error.response?.status === 401 && !isAuthFlowRequest) {
       // Handle unauthenticated state (e.g. clear token, redirect to login)
       localStorage.removeItem('fasalsetu_token');
       window.location.href = '/login';

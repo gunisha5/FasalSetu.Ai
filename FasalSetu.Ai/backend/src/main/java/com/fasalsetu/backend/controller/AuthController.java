@@ -98,6 +98,7 @@ public class AuthController {
             "user", Map.of(
                 "id", user.getId(),
                 "fullName", user.getFullName(),
+                "name", user.getFullName(),
                 "email", user.getEmail(),
                 "role", user.getRole(),
                 "isEmailVerified", user.isEmailVerified()

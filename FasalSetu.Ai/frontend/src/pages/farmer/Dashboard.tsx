@@ -1,97 +1,167 @@
 import { Link } from 'react-router-dom';
-import { Sprout, Map, AlertTriangle, ArrowRight, Wallet, ClipboardList } from 'lucide-react';
+import { Sprout, Map, AlertTriangle, ArrowRight, Wallet, ClipboardList, PlusCircle, TrendingUp } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useEffect, useState } from 'react';
 import { farmApi } from '../../utils/apiClient';
+import { motion } from 'framer-motion';
 
 export default function Dashboard() {
   const user = useAuthStore(state => state.user);
+  const fullName = user?.fullName || 'Farmer';
+  const firstName = fullName.split(' ')[0]; // Still use first name for the 'Namaste' greeting as it is more natural, but derived ONLY from fullName.
   const farmerId = Number(user?.id) || 1;
   const [totalArea, setTotalArea] = useState<number>(0);
 
   useEffect(() => {
     if (isNaN(farmerId)) return;
-
     farmApi.getAll(farmerId)
       .then(res => {
-        const sum = res.data.reduce((acc, farm) => acc + (farm.areaHectares || 0), 0);
+        const sum = res.data.reduce((acc, farm) => acc + (farm.areaAcres || 0), 0);
         setTotalArea(Math.round(sum * 100) / 100);
       })
       .catch(() => console.error("Could not fetch farms for total area"));
   }, [farmerId]);
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
   
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <motion.div 
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="space-y-10"
+    >
       
       {/* Welcome Header */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-brand-600 to-brand-400 p-8 rounded-[2rem] text-white shadow-xl shadow-brand-500/20">
+      <motion.div variants={item} className="relative overflow-hidden bg-gradient-to-br from-brand-600 to-brand-400 p-10 rounded-[3rem] text-white shadow-xl shadow-brand-500/20">
         <div className="relative z-10">
-          <h1 className="text-3xl font-black mb-2">Namaste, {user?.fullName?.split(' ')[0] || 'Farmer'}!</h1>
-          <p className="text-brand-50 opacity-90 font-medium">Your farm profile is verified and active.</p>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center">
+              <Sprout size={20} className="text-white" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Farmer Dashboard</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black mb-3">Namaste, <span className="text-brand-100">{firstName || 'Farmer'}!</span></h1>
+          <p className="text-brand-50 text-lg font-bold max-w-md">Your fields are monitored and secure. Current agricultural outlook is <span className="underline decoration-white/50 decoration-2 underline-offset-4">Healthy</span>.</p>
         </div>
-        <Sprout className="absolute -right-4 -bottom-4 text-white/10 w-48 h-48 -rotate-12" strokeWidth={1} />
+        <Sprout className="absolute -right-8 -bottom-8 text-white/10 w-64 h-64 -rotate-12 animate-float" strokeWidth={1} />
+      </motion.div>
+
+      {/* Quick Actions Grid (For Illiterate Users - BIG ICONS) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {/* File Claim - CRITICAL ACTION */}
+        <motion.div variants={item} className="md:col-span-2">
+          <Link to="/farmer/claims/new" className="h-full bg-white border-2 border-red-100 hover:border-red-500 p-8 rounded-[2.5rem] flex items-center gap-8 transition-all shadow-premium group relative overflow-hidden active:scale-[0.98]">
+             <div className="w-24 h-24 bg-red-50 rounded-[2rem] flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform duration-500">
+               <AlertTriangle size={56} strokeWidth={2.5} className="group-hover:rotate-12 transition-transform" />
+             </div>
+             <div className="flex-1">
+                <p className="font-black text-3xl text-text-main mb-1">File Claim</p>
+                <p className="text-text-secondary font-bold text-sm">Crop damaged? Report now for quick payout.</p>
+             </div>
+             <div className="absolute right-0 top-0 bottom-0 w-2 bg-red-500 transform translate-x-full group-hover:translate-x-0 transition-transform" />
+          </Link>
+        </motion.div>
+
+        {/* Register Field */}
+        <motion.div variants={item}>
+          <Link to="/farmer/farms/new" className="h-full bg-white border border-surface-border hover:border-brand-500 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center gap-4 transition-all shadow-premium group active:scale-[0.98]">
+             <div className="w-16 h-16 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 group-hover:bg-brand-500 group-hover:text-white transition-all duration-300">
+               <PlusCircle size={32} strokeWidth={2.5} />
+             </div>
+             <div>
+               <p className="font-black text-xl text-text-main">Add Field</p>
+               <p className="text-text-secondary text-xs mt-1 font-bold">Register new land</p>
+             </div>
+          </Link>
+        </motion.div>
+
       </div>
 
-      {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Stats Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         
         {/* Total Area Card */}
-        <div className="bg-white border border-surface-border p-6 rounded-[2rem] flex items-center justify-between shadow-premium transition-transform hover:scale-[1.02] cursor-default">
-          <div className="space-y-1">
-            <p className="text-text-secondary text-xs font-bold uppercase tracking-widest">Total Land</p>
-            <p className="text-4xl font-black text-text-main leading-none">{totalArea} <span className="text-lg font-bold text-brand-600">Ha</span></p>
+        <motion.div variants={item} className="bg-white border border-surface-border p-8 rounded-[2.5rem] flex items-center justify-between shadow-premium group">
+          <div className="space-y-2">
+            <p className="text-text-secondary text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-2">
+              <Map size={14} /> Total Land
+            </p>
+            <p className="text-4xl font-black text-text-main leading-none">
+              {totalArea} <span className="text-lg font-bold text-brand-600 uppercase">Acres</span>
+            </p>
           </div>
-          <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600">
-            <Map size={32} strokeWidth={2.5} />
+          <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 group-hover:scale-110 transition-transform">
+            <TrendingUp size={28} strokeWidth={2.5} />
           </div>
-        </div>
+        </motion.div>
         
-        {/* Pending Payout Card */}
-        <div className="bg-white border border-surface-border p-6 rounded-[2rem] flex items-center justify-between shadow-premium transition-transform hover:scale-[1.02] cursor-default">
-          <div className="space-y-1">
-            <p className="text-text-secondary text-xs font-bold uppercase tracking-widest">Wallet</p>
-            <p className="text-4xl font-black text-text-main leading-none">₹0</p>
+        {/* Wallet Card */}
+        <motion.div variants={item} className="bg-white border border-surface-border p-8 rounded-[2.5rem] flex items-center justify-between shadow-premium group">
+          <div className="space-y-2">
+            <p className="text-text-secondary text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-2">
+              <Wallet size={14} /> My Wallet
+            </p>
+            <p className="text-4xl font-black text-text-main leading-none">
+              ₹0
+            </p>
           </div>
-          <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
-            <Wallet size={32} strokeWidth={2.5} />
+          <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+            <Wallet size={28} strokeWidth={2.5} />
           </div>
-        </div>
+        </motion.div>
 
-        {/* Action Button - File Claim */}
-        <div className="md:col-span-2 lg:col-span-1">
-          <Link to="/farmer/claims/new" className="h-full bg-red-500 hover:bg-red-600 p-6 rounded-[2rem] flex items-center justify-between transition-all shadow-xl shadow-red-500/20 group active:scale-[0.98]">
-             <div className="text-white">
-               <p className="font-black text-2xl mb-1">File Claim</p>
-               <p className="text-red-50/80 text-sm font-medium">Crop damaged?</p>
-             </div>
-             <AlertTriangle className="text-white group-hover:rotate-12 transition-transform" size={40} strokeWidth={2.5} />
-          </Link>
-        </div>
+        {/* Status Tracker */}
+        <motion.div variants={item} className="bg-white border border-surface-border p-8 rounded-[2.5rem] flex items-center justify-between shadow-premium group sm:col-span-2 lg:col-span-1">
+          <div className="space-y-2">
+            <p className="text-text-secondary text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-2">
+              <ClipboardList size={14} /> Active Claims
+            </p>
+            <p className="text-4xl font-black text-text-main leading-none">0</p>
+          </div>
+          <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600 group-hover:scale-110 transition-transform">
+            <ClipboardList size={28} strokeWidth={2.5} />
+          </div>
+        </motion.div>
       </div>
 
-      {/* Recent Activity Section */}
-      <div className="bg-white border border-surface-border rounded-[2.5rem] p-8 shadow-premium relative">
-         <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-black text-text-main">Recent Status</h2>
-            <Link to="/farmer/claims" className="bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1 hover:bg-brand-100 transition-colors">
-              History <ArrowRight size={16} strokeWidth={3} />
+      {/* Recent History / Placeholder Flow */}
+      <motion.div variants={item} className="bg-white border border-surface-border rounded-[3rem] p-10 shadow-premium relative">
+         <div className="flex justify-between items-center mb-10">
+            <div>
+              <h2 className="text-2xl font-black text-text-main">Recent Activity</h2>
+              <p className="text-text-secondary text-sm font-bold mt-1">Latest updates on your fields</p>
+            </div>
+            <Link to="/farmer/claims" className="bg-brand-50 text-brand-700 px-6 py-3 rounded-2xl text-sm font-black flex items-center gap-2 hover:bg-brand-500 hover:text-white transition-all active:scale-95">
+              History <ArrowRight size={18} strokeWidth={3} />
             </Link>
          </div>
          
-         <div className="text-center py-16 flex flex-col items-center">
-            <div className="w-24 h-24 bg-surface-bg rounded-[2rem] flex items-center justify-center mb-6 ring-4 ring-white shadow-inner-soft">
-              <ClipboardList className="text-text-secondary" size={40} strokeWidth={2} />
-            </div>
-            <h3 className="text-lg font-bold text-text-main mb-2">All Safe!</h3>
-            <p className="text-text-secondary max-w-[200px] text-sm leading-relaxed">No active claims or damage alerts in your area.</p>
+         <div className="text-center py-20 flex flex-col items-center">
+            <motion.div 
+              animate={{ y: [0, -10, 0] }}
+              transition={{ repeat: Infinity, duration: 3 }}
+              className="w-28 h-28 bg-brand-50 rounded-[2.5rem] flex items-center justify-center mb-8 ring-8 ring-brand-50/50 shadow-inner-soft"
+            >
+              <ClipboardList className="text-brand-300" size={48} strokeWidth={1} />
+            </motion.div>
+            <h3 className="text-xl font-black text-text-main mb-3">Everything Looks Great!</h3>
+            <p className="text-text-secondary max-w-[280px] text-sm font-bold leading-relaxed">No active alerts. We are monitoring your field using satellite data every 24 hours.</p>
          </div>
-
-         {/* PWA Friendly - Add Link to Quick Task */}
-         <Link to="/farmer/farms/new" className="mt-8 w-full py-4 bg-surface-bg border border-dashed border-surface-border rounded-2xl flex items-center justify-center gap-2 text-text-secondary font-bold hover:bg-white hover:border-brand-300 hover:text-brand-600 transition-all">
-            <Sprout size={18} /> Register Another Field
-         </Link>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

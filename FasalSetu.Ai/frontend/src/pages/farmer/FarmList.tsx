@@ -47,7 +47,7 @@ export default function FarmList() {
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-lg">{farm.farmName}</h3>
-                <p className="text-gray-400 text-sm">{farm.village}, {farm.district} • {farm.areaHectares ?? '–'} Ha</p>
+                <p className="text-gray-400 text-sm">{farm.village}, {farm.district} • {farm.areaAcres ?? '–'} Acres</p>
               </div>
               <ArrowRight size={20} className="text-gray-600 group-hover:text-white transition-colors" />
             </Link>

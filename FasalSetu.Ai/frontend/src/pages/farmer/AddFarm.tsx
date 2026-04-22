@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, CheckCircle, Map as MapIcon } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, Map as MapIcon, Shrub, Info } from 'lucide-react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { farmApi } from '../../utils/apiClient';
@@ -9,6 +9,7 @@ import { useAuthStore } from '../../store/authStore';
 import ErrorBanner from '../../components/ErrorBanner';
 import MapPolygonDrawer from '../../components/MapPolygonDrawer';
 import { INDIA_LOCATIONS } from '../../utils/indiaData';
+import { motion } from 'framer-motion';
 
 export default function AddFarm() {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export default function AddFarm() {
   const farmerId = Number(user?.id) || 1;
 
   const [form, setForm] = useState<Partial<Farm>>({
-    farmName: '', state: '', district: '', village: '', primaryCrop: '', areaHectares: undefined,
+    farmName: '', state: '', district: '', village: '', primaryCrop: '', areaAcres: undefined,
     surveyNumber: '', soilType: '', boundaryGeoJson: ''
   });
   const [loading, setLoading] = useState(false);
@@ -27,7 +28,7 @@ export default function AddFarm() {
     setForm(prev => ({
       ...prev,
       boundaryGeoJson: JSON.stringify(geoJson),
-      areaHectares: prev.areaHectares || area
+      areaAcres: prev.areaAcres || (area * 2.471) // Convert Hectares to Acres
     }));
   };
 
@@ -54,105 +55,146 @@ export default function AddFarm() {
     const { name, value } = e.target;
     setForm(prev => {
       const updated = { ...prev, [name]: value };
-      if (name === 'state') updated.district = ''; // Reset district on state change
+      if (name === 'state') updated.district = '';
       return updated;
     });
   };
 
-  const field = (label: string, key: keyof Farm, type = 'text') => (
-    <div className="space-y-1">
-      <label className="text-sm text-gray-300 ml-1">{label}</label>
+  const field = (label: string, key: keyof Farm, type = 'text', placeholder = '') => (
+    <div className="space-y-1.5">
+      <label className="text-xs font-black text-brand-900 uppercase tracking-widest ml-1">{label}</label>
       <input
         type={type}
         name={key}
-        value={form[key] === undefined || (type === 'number' && isNaN(form[key] as any)) ? '' : (form[key] as any)}
+        placeholder={placeholder}
+        value={form[key] === null || form[key] === undefined || (type === 'number' && isNaN(form[key] as any)) ? '' : (form[key] as any)}
         onChange={handleInputChange as any}
-        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+        className="w-full bg-white border border-surface-border rounded-2xl py-4 px-5 text-text-main font-black focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 shadow-sm transition-all placeholder:text-text-secondary/40"
         required={['farmName', 'state', 'district', 'village'].includes(key as string)}
       />
     </div>
   );
 
   return (
-    <div className="max-w-4xl mx-auto pb-10">
-      <div className="flex items-center gap-4 mb-8">
-        <button onClick={() => navigate(-1)} className="p-2 hover:bg-white/10 rounded-full bg-white/5 border border-white/5">
-          <ArrowLeft size={24} />
+    <div className="max-w-5xl mx-auto pb-20">
+      <div className="flex items-center gap-6 mb-10">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="w-12 h-12 flex items-center justify-center bg-white rounded-2xl shadow-premium border border-surface-border text-text-secondary hover:text-brand-600 transition-all active:scale-95"
+        >
+          <ArrowLeft size={22} strokeWidth={3} />
         </button>
         <div>
-          <h1 className="text-2xl font-bold">Register New Farm</h1>
-          <p className="text-gray-400 text-sm">Draw your land parcel on the map for AI satellite validation</p>
+          <h1 className="text-3xl font-black text-brand-900 tracking-tight leading-none">Register Field</h1>
+          <p className="text-text-secondary text-sm font-bold mt-2">Connect your land to FasalSetu AI monitoring</p>
         </div>
       </div>
 
-      {error && <ErrorBanner message={error} />}
+      {error && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <ErrorBanner message={error} />
+        </motion.div>
+      )}
 
       {success ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-          <div className="w-16 h-16 rounded-full bg-brand-500/20 flex items-center justify-center">
-            <CheckCircle size={32} className="text-brand-400" />
+        <motion.div 
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="flex flex-col items-center justify-center py-32 gap-6 text-center bg-white rounded-[3rem] border border-surface-border shadow-premium"
+        >
+          <div className="w-24 h-24 rounded-[2rem] bg-brand-50 flex items-center justify-center text-brand-500 animate-pulse-soft">
+            <CheckCircle size={48} strokeWidth={2.5} />
           </div>
-          <h3 className="text-xl font-bold">Farm Registered!</h3>
-          <p className="text-gray-400 text-sm">Redirecting back to your farms list…</p>
-        </div>
+          <div className="space-y-2">
+            <h3 className="text-3xl font-black text-text-main">Success!</h3>
+            <p className="text-text-secondary font-bold">Your field is now registered for AI monitoring.</p>
+          </div>
+        </motion.div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
           {/* Map Side */}
-          <div className="space-y-4">
-             <div className="flex items-center gap-2 text-brand-400 font-medium ml-1">
-                <MapIcon size={18} />
-                <span>Mark Farm Boundary</span>
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="lg:col-span-7 space-y-4 lg:sticky lg:top-10"
+          >
+             <div className="bg-white p-2 rounded-[2.5rem] border border-surface-border shadow-premium overflow-hidden">
+                <div className="h-[550px] rounded-[2.1rem] overflow-hidden relative z-0">
+                   <div className="absolute top-4 left-4 z-10 glass border border-brand-100/50 px-4 py-2.5 rounded-xl text-xs font-black text-brand-700 flex items-center gap-2 shadow-lg">
+                      <MapIcon size={14} /> MARK BOUNDARY
+                   </div>
+                   <MapContainer 
+                     center={[20.5937, 78.9629]} 
+                     zoom={5} 
+                     className="h-full w-full"
+                   >
+                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                     <MapPolygonDrawer onPolygonDrawn={handlePolygonDrawn} />
+                   </MapContainer>
+                </div>
              </div>
-             <div className="h-[500px] rounded-3xl overflow-hidden border border-white/10 shadow-2xl z-0">
-                <MapContainer 
-                  center={[20.5937, 78.9629]} 
-                  zoom={5} 
-                  className="h-full w-full"
-                >
-                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  <MapPolygonDrawer onPolygonDrawn={handlePolygonDrawn} />
-                </MapContainer>
+             <div className="bg-brand-50 border-2 border-brand-100 p-4 rounded-2xl flex items-start gap-4">
+               <Info size={20} className="text-brand-600 shrink-0 mt-0.5" strokeWidth={2.5} />
+               <p className="text-[11px] text-brand-800 font-bold leading-relaxed">
+                 Tap the polygon icon on the map to start drawing. Click each corner of your field and close the shape to finish. AI will use this area to check for flood/drought.
+               </p>
              </div>
-             <p className="text-xs text-gray-500 italic ml-2">
-               * Use the polygon tool in the top-left to draw your field boundary.
-             </p>
-          </div>
+          </motion.div>
 
           {/* Form Side */}
-          <form onSubmit={handleSubmit} className="bg-surface-card border border-white/5 rounded-3xl p-6 shadow-2xl h-fit space-y-4">
-            {field('Farm Name', 'farmName')}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-sm text-gray-300 ml-1">State</label>
-                <select name="state" value={form.state} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white outline-none focus:ring-2 focus:ring-brand-500 [&>option]:bg-surface-dark" required>
-                   <option value="">Select...</option>
-                   {Object.keys(INDIA_LOCATIONS).sort().map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="lg:col-span-5 h-full"
+          >
+            <form onSubmit={handleSubmit} className="bg-white border border-surface-border rounded-[2.5rem] p-8 shadow-premium space-y-6">
+              <div className="flex items-center gap-3 mb-4">
+                 <div className="w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center text-brand-600">
+                    <Shrub size={20} strokeWidth={2.5} />
+                 </div>
+                 <p className="font-black text-lg text-text-main">Field Details</p>
               </div>
-              <div className="space-y-1">
-                <label className="text-sm text-gray-300 ml-1">District</label>
-                <select name="district" value={form.district} onChange={handleInputChange} disabled={!form.state} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white outline-none focus:ring-2 focus:ring-brand-500 [&>option]:bg-surface-dark disabled:opacity-40" required>
-                   <option value="">{form.state ? 'Select...' : 'Choose State First'}</option>
-                   {(INDIA_LOCATIONS[form.state!] || []).sort().map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-            </div>
-            {field('Village', 'village')}
-            <div className="grid grid-cols-2 gap-4">
-              {field('Survey Number', 'surveyNumber')}
-              {field('Area (Hectares)', 'areaHectares', 'number')}
-            </div>
-            {field('Primary Crop (e.g. Rice, Wheat)', 'primaryCrop')}
-            {field('Soil Type (Optional)', 'soilType')}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full mt-6 bg-brand-500 hover:bg-brand-600 disabled:opacity-60 text-white font-bold py-4 rounded-xl shadow-[0_4px_20px_rgba(16,185,129,0.3)] flex items-center justify-center gap-2 transition-all"
-            >
-              {loading ? <Loader2 size={18} className="animate-spin" /> : 'Register Farm & Boundary'}
-            </button>
-          </form>
+              {field('Farm Name', 'farmName', 'text', 'e.g. Village North Field')}
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5 text-left">
+                  <label className="text-xs font-black text-brand-900 uppercase tracking-widest ml-1">State</label>
+                  <select name="state" value={form.state} onChange={handleInputChange} className="w-full bg-white border border-surface-border rounded-xl py-4 px-4 text-text-main font-black outline-none focus:ring-2 focus:ring-brand-500" required>
+                     <option value="">Select State</option>
+                     {Object.keys(INDIA_LOCATIONS).sort().map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5 text-left">
+                  <label className="text-xs font-black text-brand-900 uppercase tracking-widest ml-1">District</label>
+                  <select name="district" value={form.district} onChange={handleInputChange} disabled={!form.state} className="w-full bg-white border border-surface-border rounded-xl py-4 px-4 text-text-main font-black outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-40" required>
+                     <option value="">{form.state ? 'Select District' : 'First Pick State'}</option>
+                     {(INDIA_LOCATIONS[form.state!] || []).sort().map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {field('Village', 'village', 'text', 'Enter village name')}
+              
+              <div className="grid grid-cols-2 gap-4">
+                {field('Survey Number', 'surveyNumber', 'text', 'Khasra No.')}
+                {field('Area (Acres)', 'areaAcres', 'number', '0.00')}
+              </div>
+
+              {field('Primary Crop', 'primaryCrop', 'text', 'e.g. Rice, Wheat, Cotton')}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full mt-4 bg-brand-500 hover:bg-brand-600 disabled:opacity-40 text-white font-black text-lg py-5 rounded-2xl shadow-xl shadow-brand-500/30 flex items-center justify-center gap-3 transition-all active:scale-[0.98]"
+              >
+                {loading ? <Loader2 size={24} className="animate-spin" /> : <>Save & Connect <CheckCircle size={20} strokeWidth={3} /></>}
+              </button>
+            </form>
+          </motion.div>
+
         </div>
       )}
     </div>

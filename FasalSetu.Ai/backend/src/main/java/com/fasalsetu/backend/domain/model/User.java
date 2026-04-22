@@ -17,6 +17,18 @@ public class User {
     @Column(nullable = false)
     private String fullName;
 
+    @Column(name = "phone_number", unique = true)
+    private String phoneNumber;
+
+    @Column(name = "aadhaar_number", unique = true)
+    private String aadhaarNumber;
+
+    @Column(name = "state_name")
+    private String state;
+
+    @Column(name = "district_name")
+    private String district;
+
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
@@ -40,6 +52,18 @@ public class User {
     
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
+
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+
+    public String getAadhaarNumber() { return aadhaarNumber; }
+    public void setAadhaarNumber(String aadhaarNumber) { this.aadhaarNumber = aadhaarNumber; }
+
+    public String getState() { return state; }
+    public void setState(String state) { this.state = state; }
+
+    public String getDistrict() { return district; }
+    public void setDistrict(String district) { this.district = district; }
     
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }

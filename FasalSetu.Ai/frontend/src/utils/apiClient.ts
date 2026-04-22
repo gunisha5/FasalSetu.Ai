@@ -5,8 +5,19 @@ export const authApi = {
   login: (email: string, password?: string) => api.post('/auth/login', { email, password }),
   sendOtp: (email: string, purpose: string) => api.post('/auth/send-otp', { email, purpose }),
   verify: (email: string, otp: string, purpose: string) => api.post('/auth/verify-email', { email, otp, purpose }),
-  register: (fullName: string, email: string, password?: string) =>
-    api.post('/auth/register', { fullName, email, password, role: 'FARMER' }),
+  register: (payload: {
+    fullName: string;
+    email: string;
+    phoneNumber: string;
+    password: string;
+    aadhaarNumber: string;
+    state: string;
+    district: string;
+    accountHolderName: string;
+    bankName: string;
+    accountNumber: string;
+    ifscCode: string;
+  }) => api.post('/auth/register', { ...payload, role: 'FARMER' }),
 };
 
 // ─── Farms ───────────────────────────────────────────────────────────────────
@@ -21,7 +32,7 @@ export interface Farm {
   pincode?: string;
   surveyNumber?: string;
   primaryCrop?: string;
-  areaHectares?: number;
+  areaAcres?: number;
   soilType?: string;
   irrigationType?: string;
   boundaryGeoJson?: string;

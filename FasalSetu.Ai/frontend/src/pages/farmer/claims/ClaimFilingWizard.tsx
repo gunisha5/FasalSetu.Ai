@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Camera, UploadCloud, CheckCircle, ShieldAlert, Cpu, Loader2, MapPin, X, Trash2, FileText, CloudRain, Sun, Wind, Bug } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Camera, UploadCloud, CheckCircle, ShieldAlert, Cpu, Loader2, MapPin, Trash2, FileText, CloudRain, Sun, Wind, Bug, Shrub, AlertTriangle } from 'lucide-react';
 import { claimApi, authApi, farmApi, type Farm } from '../../../utils/apiClient';
 import { useAuthStore } from '../../../store/authStore';
 import ErrorBanner from '../../../components/ErrorBanner';
-import ExifReader from 'exifreader';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ClaimFilingWizard() {
   const navigate = useNavigate();
@@ -20,7 +20,16 @@ export default function ClaimFilingWizard() {
     calamityType: '',
     files: [] as { id: string, name: string; lat?: number; lng?: number, preview?: string }[],
     policies: [] as { name: string; isCovered: boolean; estimate: number; constraints: string[], scanning: boolean }[],
-    otp: ''
+    otp: '',
+    damagePercentage: 50,
+    policyDetails: {
+      sumInsuredPerAcre: 0,
+      totalSumInsured: 0,
+      totalInsuredArea: 0,
+      coveredRisks: [] as string[],
+      policyUnit: '',
+      extractedPoints: [] as string[]
+    }
   });
   const [farms, setFarms] = useState<Farm[]>([]);
   const [fetchingFarms, setFetchingFarms] = useState(true);
@@ -51,7 +60,7 @@ export default function ClaimFilingWizard() {
     setError('');
     try {
       await authApi.sendOtp(user.email, 'CLAIM_SUBMIT');
-      setStep(5);
+      setStep(6);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Failed to send OTP. Please try again.');
     } finally {
@@ -64,15 +73,12 @@ export default function ClaimFilingWizard() {
     setLoading(true);
     setError('');
     try {
-      // 1. Verify OTP first
       await authApi.verify(user.email, formData.otp, 'CLAIM_SUBMIT');
-      
-      // 2. If verified, proceed to file claim
       await claimApi.file({ 
         farmerId, 
         farmId: formData.farmId, 
         calamityType: formData.calamityType,
-        dateOfLoss: new Date().toISOString().split('T')[0] // Set today's date if missing
+        dateOfLoss: new Date().toISOString().split('T')[0]
       });
       navigate('/farmer/claims');
     } catch (err: any) {
@@ -89,15 +95,6 @@ export default function ClaimFilingWizard() {
     setError('');
 
     try {
-      const tags = await ExifReader.load(file);
-      const lat = tags.GPSLatitude?.description;
-      const lng = tags.GPSLongitude?.description;
-
-      if (!lat || !lng) {
-        setError('Photo rejected: No GPS geotag found. Please enable location in your camera settings.');
-        return;
-      }
-
       const preview = URL.createObjectURL(file);
 
       setFormData({
@@ -105,13 +102,11 @@ export default function ClaimFilingWizard() {
         files: [...formData.files, { 
           id: Math.random().toString(36).substr(2, 9),
           name: file.name, 
-          lat: parseFloat(lat), 
-          lng: parseFloat(lng),
           preview 
         }]
       });
     } catch (err) {
-      setError('Failed to extract location data from photo.');
+      setError('Failed to process photo.');
     } finally {
       setLoading(false);
     }
@@ -130,316 +125,543 @@ export default function ClaimFilingWizard() {
 
   useEffect(() => {
     return () => {
-      // Cleanup all object URLs when component unmounts
       formData.files.forEach(f => {
         if (f.preview) URL.revokeObjectURL(f.preview);
       });
     };
   }, []);
 
-
+  const slideVariants = {
+    enter: { x: 50, opacity: 0 },
+    center: { x: 0, opacity: 1 },
+    exit: { x: -50, opacity: 0 }
+  };
 
   return (
-    <div className="max-w-xl mx-auto pb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center gap-4 mb-8">
-        <button onClick={() => navigate(-1)} className="p-3 hover:bg-white rounded-2xl bg-white shadow-premium border border-surface-border text-text-secondary transition-all active:scale-95">
-          <ArrowLeft size={22} strokeWidth={2.5} />
+    <div className="max-w-xl mx-auto pb-20">
+      {/* Header */}
+      <div className="flex items-center gap-6 mb-10">
+        <button 
+          onClick={() => step > 1 ? setStep(step - 1) : navigate(-1)} 
+          className="w-14 h-14 flex items-center justify-center bg-white rounded-2xl shadow-premium border border-surface-border text-text-secondary hover:text-brand-600 transition-all active:scale-90"
+        >
+          <ArrowLeft size={24} strokeWidth={3} />
         </button>
         <div>
-          <h1 className="text-2xl font-black text-text-main">File Claim</h1>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            {[1, 2, 3, 4, 5].map(s => (
-              <div key={s} className={`h-1.5 rounded-full transition-all duration-300 ${s === step ? 'w-8 bg-brand-500' : s < step ? 'w-4 bg-brand-200' : 'w-2 bg-surface-border'}`} />
-            ))}
+          <h1 className="text-3xl font-black text-brand-900 tracking-tight leading-none">New Claim</h1>
+          <div className="flex items-center gap-2 mt-3">
+             {[1, 2, 3, 4, 5, 6].map(s => (
+               <div key={s} className={`h-2 rounded-full transition-all duration-500 ${s === step ? 'w-10 bg-brand-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : s < step ? 'w-4 bg-brand-200' : 'w-2 bg-surface-border'}`} />
+             ))}
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="mb-6">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <ErrorBanner message={error} />
-        </div>
+        </motion.div>
       )}
 
-      <div className="bg-white border border-surface-border rounded-[2.5rem] p-8 shadow-premium relative overflow-hidden">
-        {/* Step Background Decor */}
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-brand-500/[0.03] rounded-full blur-3xl pointer-events-none" />
-
-
-        {/* Step 1: Farm Selection */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-black text-text-main leading-tight">Which field was<br/>affected?</h2>
-            {fetchingFarms ? (
-              <div className="py-16 flex flex-col items-center gap-4">
-                <Loader2 size={40} className="animate-spin text-brand-500" strokeWidth={2.5} />
-                <p className="text-sm font-bold text-text-secondary uppercase tracking-widest">Getting your farms...</p>
-              </div>
-            ) : farms.length > 0 ? (
-              <div className="space-y-3">
-                {farms.map(farm => (
-                  <button key={farm.id} onClick={() => setFormData({ ...formData, farmId: farm.id!, farmLabel: farm.farmName })}
-                    className={`w-full p-5 border-2 rounded-[1.5rem] text-left transition-all relative ${formData.farmId === farm.id ? 'border-brand-500 bg-brand-50 shadow-lg shadow-brand-500/10' : 'border-surface-border bg-white hover:border-brand-200'}`}>
-                    <div className="flex justify-between items-center pr-8">
-                      <div>
-                        <div className={`font-black text-lg ${formData.farmId === farm.id ? 'text-brand-700' : 'text-text-main'}`}>{farm.farmName}</div>
-                        <div className="text-xs font-bold text-text-secondary uppercase tracking-wider mt-1">
-                          {farm.areaHectares} Hectares • {farm.village}
-                        </div>
-                      </div>
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${formData.farmId === farm.id ? 'bg-brand-500 border-brand-500 text-white' : 'border-surface-border'}`}>
-                        {formData.farmId === farm.id && <CheckCircle size={14} strokeWidth={3} />}
-                      </div>
+      <div className="bg-white border border-surface-border rounded-[3rem] shadow-premium overflow-hidden relative">
+        {/* Decor */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-brand-50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+        
+        <div className="p-8 md:p-12 relative z-10 min-h-[400px] flex flex-col">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="flex-1"
+            >
+              {/* Step 1: Farm Selection */}
+              {step === 1 && (
+                <div className="space-y-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600">
+                      <Shrub size={32} />
                     </div>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="py-16 text-center space-y-6">
-                <div className="w-20 h-20 bg-brand-50 text-brand-600 rounded-full flex items-center justify-center mx-auto">
-                    <MapPin size={32} />
-                </div>
-                <p className="text-text-secondary font-medium">You haven't registered any farms yet.</p>
-                <button onClick={() => navigate('/farmer/farms/new')} className="w-full py-4 bg-brand-500 text-white rounded-2xl font-bold shadow-lg shadow-brand-500/20">Register Farm Now</button>
-              </div>
-            )}
-            <button disabled={!formData.farmId} onClick={() => setStep(2)}
-              className="w-full bg-brand-500 disabled:opacity-30 disabled:bg-surface-border text-white font-black py-5 rounded-[1.5rem] mt-6 flex items-center justify-center gap-2 shadow-xl shadow-brand-500/20 transition-all active:scale-95">
-              Next Step <ArrowRight size={20} strokeWidth={3} />
-            </button>
-          </div>
-        )}
-
-        {/* Step 2: Calamity Selection */}
-        {step === 2 && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-black text-text-main">What happened<br/>to your crop?</h2>
-            
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { id: 'Flood', icon: CloudRain, color: 'text-blue-600', bg: 'bg-blue-50' },
-                { id: 'Drought', icon: Sun, color: 'text-orange-600', bg: 'bg-orange-50' },
-                { id: 'Hailstorm', icon: Wind, color: 'text-cyan-600', bg: 'bg-cyan-50' },
-                { id: 'Pest', icon: Bug, color: 'text-red-600', bg: 'bg-red-50' }
-              ].map(t => (
-                <button key={t.id} onClick={() => setFormData({ ...formData, calamityType: t.id })}
-                  className={`p-6 rounded-[1.5rem] flex flex-col items-center gap-3 transition-all border-2 ${formData.calamityType === t.id ? 'border-brand-500 bg-brand-50 shadow-lg' : 'border-surface-border bg-white hover:border-brand-200'}`}>
-                  <div className={`w-14 h-14 ${t.bg} ${t.color} rounded-2xl flex items-center justify-center`}>
-                    <t.icon size={32} strokeWidth={2.5} />
+                    <h2 className="text-3xl font-black text-text-main leading-tight">Which field is<br/>affected?</h2>
                   </div>
-                  <span className={`font-black uppercase tracking-wider text-xs ${formData.calamityType === t.id ? 'text-brand-700' : 'text-text-secondary'}`}>{t.id}</span>
-                </button>
-              ))}
-            </div>
-
-            {formData.calamityType && (
-              <div className={`p-5 rounded-2xl border-2 flex items-start gap-4 animate-in zoom-in-95 duration-300 ${isAiAssisted ? 'bg-indigo-50 border-indigo-100 text-indigo-700' : 'bg-gray-50 border-gray-100 text-gray-600'}`}>
-                {isAiAssisted ? <Cpu size={24} strokeWidth={2.5} className="shrink-0" /> : <ShieldAlert size={24} strokeWidth={2.5} className="shrink-0" />}
-                <p className="text-sm font-bold leading-snug">
-                    {isAiAssisted ? "AI SATELLITE ACTIVE: We will scan your field from space for automatic proof." : "MANUAL REVIEW: Our local officer will verify your photos manually."}
-                </p>
-              </div>
-            )}
-
-            <div className="flex gap-3 mt-6">
-                <button onClick={() => setStep(1)} className="px-6 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black active:scale-95 transition-all">Back</button>
-                <button disabled={!formData.calamityType} onClick={() => setStep(3)}
-                    className="flex-1 bg-brand-500 disabled:opacity-30 disabled:bg-surface-border text-white font-black py-5 rounded-[1.5rem] flex items-center justify-center gap-2 shadow-xl shadow-brand-500/20 transition-all active:scale-95">
-                    Continue <ArrowRight size={20} strokeWidth={3} />
-                </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Photos */}
-        {step === 3 && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-black text-text-main">Show us the<br/>damage</h2>
-              <p className="text-sm text-text-secondary font-bold uppercase tracking-widest mt-1 italic">Camera location must stay "ON"</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-               <label className="border-2 border-dashed border-brand-200 bg-brand-50/30 hover:border-brand-500 hover:bg-brand-50 rounded-[1.5rem] flex flex-col items-center justify-center cursor-pointer h-40 transition-all group active:scale-95">
-                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-brand-600 shadow-sm border border-brand-100 group-hover:scale-110 transition-transform">
-                    <Camera size={28} strokeWidth={2.5} />
-                  </div>
-                  <p className="text-xs font-black text-brand-700 mt-3 uppercase tracking-tighter">
-                    {loading ? 'Processing...' : 'Take Photo'}
-                  </p>
-                  <input type="file" accept="image/*" capture="environment" className="hidden"
-                    disabled={loading}
-                    onChange={handleFileChange} />
-               </label>
-
-               {formData.files.map((f) => (
-                 <div key={f.id} className="relative group h-40 rounded-[1.5rem] overflow-hidden border-2 border-surface-border bg-surface-bg shadow-sm">
-                    <img src={f.preview} alt={f.name} className="w-full h-full object-cover" />
-                    
-                    {/* Delete Button */}
-                    <button 
-                      onClick={() => handleRemoveFile(f.id)}
-                      className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-xl shadow-lg flex items-center justify-center transition-all hover:bg-red-600 active:scale-75"
-                    >
-                      <Trash2 size={16} strokeWidth={2.5} />
-                    </button>
-
-                    {/* GPS Badge */}
-                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-white/90 backdrop-blur-sm border-t border-surface-border">
-                       <div className="flex items-center gap-1 text-[10px] text-brand-700 font-black uppercase tracking-tighter">
-                          <MapPin size={10} strokeWidth={3} /> {f.lat?.toFixed(3)}, {f.lng?.toFixed(3)}
-                       </div>
-                    </div>
-                 </div>
-               ))}
-            </div>
-
-            <p className="text-xs text-orange-600 font-bold text-center bg-orange-50 p-3 rounded-xl border border-orange-100">
-               ⚠️ Photos without Location (Geotag) will be REJECTED by AI.
-            </p>
-
-            <div className="flex gap-3">
-                <button onClick={() => setStep(2)} className="px-6 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black active:scale-95 transition-all">Back</button>
-                <button disabled={formData.files.length === 0 || loading} onClick={() => setStep(4)} 
-                    className="flex-1 bg-brand-500 disabled:opacity-30 disabled:bg-surface-border text-white font-black py-5 rounded-[1.5rem] flex items-center justify-center gap-2 shadow-xl shadow-brand-500/20 transition-all active:scale-95">
-                    Next <ArrowRight size={20} strokeWidth={3} />
-                </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Policy Analysis */}
-        {step === 4 && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-black text-text-main">Insurance Policy</h2>
-              <p className="text-sm text-text-secondary font-bold uppercase tracking-widest mt-1 italic">AI will read your document</p>
-            </div>
-
-            <label className={`border-2 border-dashed rounded-[1.5rem] p-8 flex flex-col items-center cursor-pointer transition-all ${formData.policies.length >= 3 ? 'opacity-40 pointer-events-none' : 'border-brand-200 bg-brand-50/30 hover:border-brand-500 hover:bg-brand-50 active:scale-95'}`}>
-              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-brand-600 shadow-sm border border-brand-100 mb-3">
-                <UploadCloud size={28} strokeWidth={2.5} />
-              </div>
-              <p className="text-sm font-black text-brand-700 uppercase">Upload PDF</p>
-              <input type="file" accept="application/pdf" className="hidden"
-                onChange={async (e) => {
-                  if (e.target.files?.[0] && formData.policies.length < 3) {
-                    const fileName = e.target.files[0].name;
-                    const newPolicy = { name: fileName, isCovered: true, estimate: 0, constraints: [] as string[], scanning: true };
-                    setFormData(prev => ({ ...prev, policies: [...prev.policies, newPolicy] }));
-
-                    // Simulate AI Analysis
-                    setTimeout(() => {
-                      setFormData(prev => ({
-                        ...prev,
-                        policies: prev.policies.map(p => {
-                          if (p.name !== fileName) return p;
-                          const isRelevant = fileName.toLowerCase().includes('crop') || fileName.toLowerCase().includes('monsoon') || fileName.toLowerCase().includes('agri');
-                          return {
-                            ...p,
-                            scanning: false,
-                            isCovered: isRelevant,
-                            estimate: isRelevant ? Math.floor(Math.random() * 40000) + 20000 : 0,
-                            constraints: isRelevant ? ['Low Rain Cov.', '30% Area Rule'] : ['Invalid Policy Type']
-                          };
-                        })
-                      }));
-                    }, 2500);
-                  }
-                }} />
-            </label>
-
-            <div className="space-y-3">
-              {formData.policies.map((p, i) => (
-                <div key={i} className={`relative p-5 rounded-[1.5rem] border-2 transition-all ${p.scanning ? 'bg-surface-bg border-surface-border animate-pulse' : p.isCovered ? 'bg-brand-50 border-brand-500/20 shadow-md shadow-brand-500/5' : 'bg-red-50 border-red-500/20'}`}>
                   
-                  <button onClick={() => setFormData(prev => ({ ...prev, policies: prev.policies.filter((_, idx) => idx !== i) }))}
-                    className="absolute top-3 right-3 w-8 h-8 bg-white border border-surface-border text-text-secondary rounded-xl flex items-center justify-center hover:text-red-600 transition-colors active:scale-75">
-                    <Trash2 size={16} strokeWidth={2.5} />
-                  </button>
-
-                  <div className="flex items-start gap-4">
-                    <div className={`p-3 rounded-2xl ${p.scanning ? 'bg-white text-gray-300' : p.isCovered ? 'bg-brand-500 text-white' : 'bg-red-500 text-white'}`}>
-                      {p.scanning ? <Loader2 size={24} className="animate-spin" /> : <FileText size={24} strokeWidth={2.5} />}
+                  {fetchingFarms ? (
+                    <div className="py-20 flex flex-col items-center gap-4">
+                      <Loader2 size={48} className="animate-spin text-brand-500" strokeWidth={2.5} />
+                      <p className="text-xs font-black text-brand-400 uppercase tracking-[0.2em]">Locating fields...</p>
                     </div>
-                    
-                    <div className="flex-1 min-w-0 pr-6">
-                      <p className="font-black text-text-main truncate text-sm">{p.name}</p>
-                      
-                      {p.scanning ? (
-                        <p className="text-[11px] text-text-secondary font-bold uppercase tracking-wider mt-1.5 flex items-center gap-1.5">
-                           <span className="w-1.5 h-1.5 bg-brand-400 rounded-full animate-bounce" /> Checking for {formData.calamityType} clauses...
-                        </p>
-                      ) : (
-                        <div className="mt-2 space-y-2">
-                           <div className="flex items-center justify-between">
-                              <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${p.isCovered ? 'bg-brand-100 text-brand-700' : 'bg-red-100 text-red-700'}`}>
-                                 {p.isCovered ? 'Coverage Found' : 'Claim Rejected'}
-                              </span>
-                              {p.isCovered && <span className="text-brand-700 font-black text-sm">₹{p.estimate.toLocaleString()}</span>}
-                           </div>
-                           {p.isCovered && (
-                            <div className="flex flex-wrap gap-1">
-                              {p.constraints.map((c, ci) => (
-                                <span key={ci} className="text-[9px] bg-white text-text-secondary font-black px-2 py-0.5 rounded border border-surface-border">
-                                  {c}
-                                </span>
-                              ))}
+                  ) : farms.length > 0 ? (
+                    <div className="space-y-4">
+                      {farms.map(farm => (
+                        <button 
+                          key={farm.id} 
+                          onClick={() => setFormData({ ...formData, farmId: farm.id!, farmLabel: farm.farmName })}
+                          className={`w-full p-6 border-2 rounded-[2rem] text-left transition-all relative overflow-hidden group ${formData.farmId === farm.id ? 'border-brand-500 bg-brand-50 shadow-lg shadow-brand-500/10' : 'border-surface-border hover:border-brand-200'}`}
+                        >
+                          <div className="flex justify-between items-center relative z-10">
+                            <div>
+                               <p className={`text-xl font-black ${formData.farmId === farm.id ? 'text-brand-900' : 'text-text-main'}`}>{farm.farmName}</p>
+                               <p className="text-[10px] font-black uppercase tracking-widest text-text-main mt-1 opacity-80">{farm.areaAcres} Acres • {farm.village}</p>
                             </div>
-                           )}
-                        </div>
-                      )}
+                            <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${formData.farmId === farm.id ? 'bg-brand-500 border-brand-500 text-white animate-pulse-soft' : 'border-surface-border'}`}>
+                               {formData.farmId === farm.id && <CheckCircle size={16} strokeWidth={3} />}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
                     </div>
+                  ) : (
+                    <div className="py-20 text-center space-y-6">
+                      <MapPin size={64} className="mx-auto text-brand-100" strokeWidth={1} />
+                      <p className="text-text-secondary font-bold text-lg">No fields registered yet.</p>
+                      <button onClick={() => navigate('/farmer/farms/new')} className="w-full py-5 bg-brand-500 text-white rounded-[1.5rem] font-black text-lg shadow-xl shadow-brand-500/20 active:scale-95 transition-all">Register Field Now</button>
+                    </div>
+                  )}
+                  
+                  <button 
+                    disabled={!formData.farmId} 
+                    onClick={() => setStep(2)}
+                    className="w-full bg-brand-500 disabled:opacity-30 disabled:bg-surface-border text-white font-black text-xl py-6 rounded-[2rem] shadow-xl shadow-brand-500/30 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+                  >
+                    Next Step <ArrowRight size={24} strokeWidth={3} />
+                  </button>
+                </div>
+              )}
+
+              {/* Step 2: Calamity Selection */}
+              {step === 2 && (
+                <div className="space-y-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600">
+                      <AlertTriangle size={32} />
+                    </div>
+                    <h2 className="text-3xl font-black text-text-main">What happened<br/>to your crop?</h2>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { id: 'Flood', icon: CloudRain, color: 'text-blue-600', bg: 'bg-blue-50', border: 'hover:border-blue-500' },
+                      { id: 'Drought', icon: Sun, color: 'text-orange-600', bg: 'bg-orange-50', border: 'hover:border-orange-500' }
+                    ].map(t => (
+                      <button 
+                        key={t.id} 
+                        onClick={() => setFormData({ ...formData, calamityType: t.id })}
+                        className={`p-8 rounded-[2.5rem] flex flex-col items-center gap-4 transition-all border-2 ${formData.calamityType === t.id ? 'border-brand-500 bg-brand-50 scale-[1.02] shadow-lg' : 'border-surface-border bg-white shadow-sm ' + t.border}`}
+                      >
+                        <div className={`w-20 h-20 ${t.bg} ${t.color} rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                          <t.icon size={48} strokeWidth={2} />
+                        </div>
+                        <span className={`font-black uppercase tracking-[0.2em] text-[10px] ${formData.calamityType === t.id ? 'text-brand-950 underline underline-offset-4' : 'text-text-main opacity-60'}`}>{t.id}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <AnimatePresence>
+                    {formData.calamityType && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className={`p-6 rounded-[1.5rem] border-2 flex items-start gap-4 ${isAiAssisted ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-lg shadow-indigo-500/10' : 'bg-gray-50 border-gray-200 text-gray-500'}`}
+                      >
+                        {isAiAssisted ? <Cpu size={28} strokeWidth={2.5} className="shrink-0 animate-pulse text-indigo-500" /> : <ShieldAlert size={28} strokeWidth={2.5} className="shrink-0" />}
+                        <p className="text-sm font-black leading-snug">
+                            {isAiAssisted ? "AI SATELLITE ENABLED: We will use space-monitoring to verify your damage within 24 hours." : "MANUAL REVIEW: A human officer will visit/review your case based on photos."}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div className="flex gap-4 mt-6">
+                    <button onClick={() => setStep(1)} className="px-8 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black text-lg active:scale-95 transition-all">Back</button>
+                    <button 
+                      disabled={!formData.calamityType} 
+                      onClick={() => setStep(3)}
+                      className="flex-1 bg-brand-500 disabled:opacity-30 disabled:bg-surface-border text-white font-black text-xl py-6 rounded-[2rem] shadow-xl shadow-brand-500/30 flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
+                    >
+                      Next Step <ArrowRight size={24} strokeWidth={3} />
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
+              )}
 
-            <div className="flex gap-3">
-                <button onClick={() => setStep(3)} className="px-6 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black active:scale-95 transition-all">Back</button>
-                <button disabled={formData.policies.length === 0 || formData.policies.some(p => p.scanning || !p.isCovered) || loading} onClick={handleStep4Submit}
-                    className="flex-1 bg-brand-500 disabled:opacity-30 disabled:bg-surface-border text-white font-black py-5 rounded-[1.5rem] flex items-center justify-center gap-2 shadow-xl shadow-brand-500/20 transition-all active:scale-95">
-                    Proceed <ArrowRight size={20} strokeWidth={3} />
-                </button>
-            </div>
-          </div>
-        )}
+              {/* Step 3: Damage Severity */}
+              {step === 3 && (
+                <div className="space-y-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-600">
+                      <AlertTriangle size={32} />
+                    </div>
+                    <h2 className="text-3xl font-black text-text-main leading-tight">Extent of<br/>Damage?</h2>
+                  </div>
 
-        {/* Step 5: OTP & Verify */}
-        {step === 5 && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-black text-text-main text-center">Summary</h2>
-            <div className="bg-surface-bg/50 rounded-[1.5rem] p-6 text-sm space-y-4 border-2 border-surface-border">
-              <div className="flex justify-between items-center"><span className="text-text-secondary font-bold uppercase tracking-tighter text-[10px]">Your Field</span><span className="text-text-main font-black">{formData.farmLabel}</span></div>
-              <div className="flex justify-between items-center"><span className="text-text-secondary font-bold uppercase tracking-tighter text-[10px]">Damage</span><span className="text-text-main font-black flex items-center gap-1.5"><div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" /> {formData.calamityType}</span></div>
-              
-              <div className="pt-4 border-t border-surface-border flex justify-between items-center">
-                 <div className="space-y-1">
-                    <p className="text-[10px] text-text-secondary font-bold uppercase tracking-widest">Est. Payout</p>
-                    <p className="text-3xl font-black text-brand-600">₹{formData.policies.reduce((acc, p) => acc + p.estimate, 0).toLocaleString()}</p>
-                 </div>
-                 <div className="p-3 bg-white rounded-2xl border border-surface-border shadow-sm text-center min-w-[70px]">
-                    <div className="text-xl font-black text-text-main">{formData.files.length}</div>
-                    <div className="text-[9px] text-text-secondary font-bold uppercase">Photos</div>
-                 </div>
-              </div>
-            </div>
+                  <div className="bg-surface-bg rounded-[2.5rem] p-10 border-2 border-surface-border text-center space-y-8">
+                    <div className="space-y-2">
+                       <p className="text-6xl font-black text-brand-600 tracking-tighter">{formData.damagePercentage}%</p>
+                       <p className="text-xs font-black text-text-secondary uppercase tracking-[0.2em]">Estimated Field Loss</p>
+                    </div>
+                    
+                    <input 
+                      type="range" 
+                      min="1" 
+                      max="100" 
+                      value={formData.damagePercentage}
+                      onChange={(e) => setFormData({ ...formData, damagePercentage: parseInt(e.target.value) })}
+                      className="w-full h-4 bg-brand-100 rounded-lg appearance-none cursor-pointer accent-brand-500"
+                    />
 
-            <div className="space-y-3">
-                <p className="text-sm text-center text-text-secondary font-bold">SENT TO {user?.email?.toUpperCase()}</p>
-                <input type="text" maxLength={6} value={formData.otp}
-                    onChange={e => setFormData({ ...formData, otp: e.target.value.replace(/\D/g, '') })}
-                    className="w-full text-center text-4xl tracking-[0.5em] font-black py-5 bg-white border-2 border-surface-border rounded-2xl focus:border-brand-500 focus:outline-none shadow-inner-soft"
-                    placeholder="000000" />
-            </div>
+                    <div className="flex justify-between text-[10px] font-black text-brand-800 uppercase tracking-widest px-2">
+                       <span>Minor</span>
+                       <span>Moderate</span>
+                       <span>Total Loss</span>
+                    </div>
+                  </div>
 
-            <div className="flex gap-3">
-                <button onClick={() => setStep(4)} className="px-6 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black active:scale-95 transition-all">Back</button>
-                <button disabled={formData.otp.length !== 6 || loading} onClick={submitClaim}
-                    className="flex-1 bg-brand-500 disabled:opacity-30 disabled:bg-surface-border text-white font-black text-lg py-5 rounded-[1.5rem] shadow-xl shadow-brand-500/20 flex items-center justify-center gap-2 active:scale-95 transition-all">
-                    {loading ? <Loader2 size={24} className="animate-spin" /> : 'Confirm Submission'}
-                </button>
-            </div>
+                  <div className="bg-brand-50 border-2 border-brand-100 p-6 rounded-[1.5rem] flex items-center gap-4">
+                    <Cpu size={24} className="text-brand-500 shrink-0" />
+                    <p className="text-xs font-bold text-brand-800 leading-snug">
+                      AI estimation will be calculated based on this severity. Satellite will verify this claim.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <button onClick={() => setStep(2)} className="px-8 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black text-lg active:scale-95 transition-all">Back</button>
+                    <button 
+                      onClick={() => setStep(4)}
+                      className="flex-1 bg-brand-500 text-white font-black text-xl py-6 rounded-[2rem] shadow-xl shadow-brand-500/30 flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
+                    >
+                      Confirm Severity <ArrowRight size={24} strokeWidth={3} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Photos */}
+              {step === 4 && (
+                <div className="space-y-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600">
+                      <Camera size={32} />
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-black text-text-main leading-none">Photo Evidence</h2>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-brand-500 mt-2">Clear photos help in faster approval</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <label className="border-4 border-dashed border-brand-100 bg-brand-50/50 hover:border-brand-500 hover:bg-brand-50 rounded-[2.5rem] flex flex-col items-center justify-center cursor-pointer h-48 transition-all group active:scale-95 relative overflow-hidden">
+                      <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center text-brand-600 shadow-premium border border-brand-100 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-300">
+                        <Camera size={36} strokeWidth={2.5} />
+                      </div>
+                      <p className="text-[11px] font-black text-brand-700 mt-4 uppercase tracking-[0.2em]">
+                        {loading ? 'Processing...' : 'Take Photo'}
+                      </p>
+                      <input type="file" accept="image/*" capture="environment" className="hidden"
+                        disabled={loading}
+                        onChange={handleFileChange} />
+                      {loading && <div className="absolute inset-0 bg-white/40 flex items-center justify-center"><Loader2 className="animate-spin text-brand-500" size={32} /></div>}
+                    </label>
+
+                    {formData.files.map((f) => (
+                      <motion.div 
+                        layoutId={f.id}
+                        key={f.id} 
+                        className="relative group h-48 rounded-[2.5rem] overflow-hidden border-2 border-surface-border bg-surface-bg shadow-premium"
+                      >
+                        <img src={f.preview} alt={f.name} className="w-full h-full object-cover" />
+                        <button 
+                          onClick={() => handleRemoveFile(f.id)}
+                          className="absolute top-3 right-3 w-10 h-10 bg-red-500 text-white rounded-2xl shadow-lg flex items-center justify-center transition-all hover:bg-red-600 active:scale-75 backdrop-blur-md bg-opacity-90"
+                        >
+                          <Trash2 size={20} strokeWidth={2.5} />
+                        </button>
+                        <div className="absolute bottom-0 left-0 right-0 p-3 bg-white/90 backdrop-blur-md border-t border-surface-border">
+                           <div className="flex items-center gap-1.5 text-[10px] text-brand-800 font-black uppercase tracking-tighter">
+                              Evidence #{formData.files.indexOf(f) + 1}
+                           </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  <div className="bg-brand-50 border-2 border-brand-100 p-5 rounded-[1.5rem] flex gap-4 items-start">
+                    <CheckCircle className="text-brand-600 shrink-0" size={24} strokeWidth={2.5} />
+                    <p className="text-xs font-bold text-brand-800 leading-snug">Photo Uploaded: Your evidence will be analyzed by our AI for damage verification.</p>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <button onClick={() => setStep(3)} className="px-8 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black text-lg active:scale-95 transition-all">Back</button>
+                    <button 
+                      disabled={formData.files.length === 0 || loading} 
+                      onClick={() => setStep(5)}
+                      className="flex-1 bg-brand-500 disabled:opacity-30 disabled:bg-surface-border text-white font-black text-xl py-6 rounded-[2rem] shadow-xl shadow-brand-500/30 flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
+                    >
+                      Continue <ArrowRight size={24} strokeWidth={3} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 5: Policy Analysis */}
+              {step === 5 && (
+                <div className="space-y-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600">
+                      <FileText size={32} />
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-black text-text-main leading-none">Insurance Doc</h2>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-brand-500 mt-2">Upload your policy for record keeping</p>
+                    </div>
+                  </div>
+
+                  <label className={`border-4 border-dashed rounded-[2.5rem] p-10 flex flex-col items-center cursor-pointer transition-all ${formData.policies.length >= 3 ? 'opacity-40 pointer-events-none' : 'border-brand-100 bg-brand-50/50 hover:border-brand-500 hover:bg-brand-50 active:scale-95'}`}>
+                    <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center text-brand-600 shadow-premium border border-brand-100 mb-4">
+                      <UploadCloud size={36} strokeWidth={2.5} />
+                    </div>
+                    <p className="text-sm font-black text-brand-700 uppercase tracking-widest">Upload Policy PDF</p>
+                    <input type="file" accept="application/pdf" className="hidden"
+                      onChange={(e) => {
+                          // Smart Policy Scanner Mock
+                          const scanSimulation = async () => {
+                             const fileName = e.target.files![0].name;
+                             const newPolicy = { 
+                                name: fileName, 
+                                isCovered: true, 
+                                estimate: 0, 
+                                constraints: [] as string[], 
+                                scanning: true 
+                             };
+                             
+                             // Add policy in 'scanning' state
+                             setFormData(p => ({ ...p, policies: [...p.policies, newPolicy] }));
+                             
+                             // Simulate AI Scanner Delay
+                             await new Promise(r => setTimeout(r, 2000));
+
+                             // Mock extraction based on Standard Policy Template
+                             const policyData = {
+                                insuredArea: 5.0,
+                                unit: 'Acre',
+                                sumInsured: 250000,
+                                coveredRisks: ['Flood', 'Drought']
+                             };
+
+                             const isCovered = policyData.coveredRisks.includes(formData.calamityType);
+                             let alert = '';
+                             let finalEstimate = 0;
+                             let ratePerAcre = 0;
+                             let areaInAcres = 0;
+
+                             if (!isCovered) {
+                                alert = `Your policy does not cover ${formData.calamityType}. Please upload another policy document.`;
+                             } else {
+                                // Unit Conversion
+                                areaInAcres = policyData.unit === 'Hectare' ? policyData.insuredArea * 2.471 : policyData.insuredArea;
+                                ratePerAcre = policyData.sumInsured / areaInAcres;
+                                
+                                // Dynamic Calculation based on Farmer's current report
+                                const selectedFarm = farms.find(f => f.id === formData.farmId);
+                                const farmerAreaAcres = selectedFarm?.areaAcres || 0;
+                                
+                                // Formula: (Policy Rate per Acre) * (Farmer's Actual Farm Size) * (Self-reported Damage %)
+                                finalEstimate = (ratePerAcre * farmerAreaAcres * formData.damagePercentage) / 100;
+                             }
+
+                             setFormData(prev => ({
+                                ...prev,
+                                policyDetails: {
+                                  sumInsuredPerAcre: ratePerAcre,
+                                  totalSumInsured: policyData.sumInsured,
+                                  totalInsuredArea: policyData.insuredArea,
+                                  coveredRisks: policyData.coveredRisks,
+                                  policyUnit: policyData.unit,
+                                  extractedPoints: [
+                                     `• Total **₹${policyData.sumInsured.toLocaleString()}** Sum Insured detected`
+                                  ]
+                                },
+                                policies: prev.policies.map(p => p.name === fileName ? {
+                                   ...p,
+                                   scanning: false,
+                                   isCovered: isCovered,
+                                   constraints: isCovered ? ['Policy Matched', 'Coverage Verified'] : [alert]
+                                } : p)
+                             }));
+
+                             if (!isCovered) {
+                                setError(alert);
+                             }
+                          };
+
+                          scanSimulation();
+                      }} />
+                  </label>
+
+                  <div className="space-y-4">
+                    {formData.policies.map((p, i) => (
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        key={i} 
+                        className="relative p-6 rounded-[2rem] border-2 bg-brand-50 border-brand-500 shadow-lg shadow-brand-500/10 transition-all"
+                      >
+                        <button onClick={() => setFormData(prev => ({ ...prev, policies: prev.policies.filter((_, idx) => idx !== i) }))}
+                          className="absolute top-4 right-4 w-10 h-10 bg-white border border-surface-border text-text-secondary rounded-2xl flex items-center justify-center hover:text-red-600 transition-all active:scale-75 shadow-sm"
+                        >
+                          <Trash2 size={18} strokeWidth={2.5} />
+                        </button>
+
+                        <div className="flex items-start gap-5">                           <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg bg-brand-500 text-white">
+                            <FileText size={28} strokeWidth={2.5} />
+                          </div>
+                          
+                         <div className="flex-1 min-w-0 pr-10">
+                            <p className="font-black text-text-main truncate text-lg leading-none mt-1">{p.name}</p>
+                            
+                            <div className="mt-3 space-y-3">
+                               {p.scanning ? (
+                                  <div className="flex items-center gap-2 text-brand-600 animate-pulse">
+                                     <Loader2 size={14} className="animate-spin" />
+                                     <span className="text-[10px] font-black uppercase tracking-widest">AI Scanner Working...</span>
+                                  </div>
+                               ) : (
+                                  <>
+                                     <div className="flex items-center justify-between">
+                                        <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${p.isCovered ? 'bg-brand-700 text-white' : 'bg-red-600 text-white animate-bounce'}`}>
+                                           {p.isCovered ? 'Coverage Verified' : 'No Coverage Found'}
+                                        </span>
+                                     </div>
+                                     <div className="flex flex-wrap gap-2">
+                                        {p.constraints.map((c, idx) => (
+                                           <span key={idx} className={`text-[10px] font-black px-3 py-1 rounded-lg border ${p.isCovered ? 'bg-white text-brand-700 border-brand-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                                              {c}
+                                           </span>
+                                        ))}
+                                     </div>
+                                  </>
+                               )}
+                            </div>
+                         </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-4">
+                    <button onClick={() => setStep(4)} className="px-8 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black text-lg active:scale-95 transition-all">Back</button>
+                    <button 
+                      disabled={loading || formData.policies.some(p => p.scanning) || formData.policies.length === 0 || formData.policies.some(p => !p.isCovered)} 
+                      onClick={handleStep4Submit}
+                      className="flex-1 bg-brand-500 disabled:opacity-30 disabled:bg-surface-border text-white font-black text-xl py-6 rounded-[2rem] shadow-xl shadow-brand-500/30 flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
+                    >
+                      Authorize <ArrowRight size={24} strokeWidth={3} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 6: OTP & Final Summary */}
+              {step === 6 && (
+                <div className="space-y-8">
+                   <div className="text-center">
+                      <div className="w-20 h-20 bg-brand-50 text-brand-700 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-lg shadow-brand-600/10">
+                        <CheckCircle size={40} strokeWidth={3} />
+                      </div>
+                      <h2 className="text-3xl font-black text-text-main">Nearly Done!</h2>
+                      <p className="text-text-main font-bold mt-2 italic text-sm">Review values carefully before confirming</p>
+                   </div>
+
+                   <div className="bg-brand-50/50 rounded-[2.5rem] p-8 border-2 border-brand-100 space-y-6">
+                      <div className="flex justify-between items-center group">
+                        <span className="text-[11px] text-text-secondary font-black uppercase tracking-widest">Field</span>
+                        <span className="text-lg font-black text-text-main">{formData.farmLabel}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[11px] text-text-secondary font-black uppercase tracking-widest">Damage Type</span>
+                        <span className="text-lg font-black text-red-600 bg-red-50 px-4 py-1 rounded-full border border-red-200">{formData.calamityType}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[11px] text-text-secondary font-black uppercase tracking-widest">Damage Extent</span>
+                        <span className="text-lg font-black text-brand-700 bg-brand-50 px-4 py-1 rounded-full border border-brand-200">{formData.damagePercentage}%</span>
+                      </div>
+                      
+                      {(() => {
+                          const farmArea = farms.find(f => f.id === formData.farmId)?.areaAcres || 0;
+                          const rate = formData.policyDetails.sumInsuredPerAcre;
+                          const dynamicEstimate = Math.round((rate * farmArea * formData.damagePercentage) / 100);
+                          
+                          return (
+                            <div className="pt-6 border-t border-brand-100 flex justify-between items-end">
+                               <div className="space-y-1">
+                                  <p className="text-[11px] text-text-secondary font-black uppercase tracking-widest">Total Estimated Payout</p>
+                                  <p className="text-5xl font-black text-brand-700">₹{dynamicEstimate.toLocaleString()}</p>
+                               </div>
+                               <div className="bg-white/80 p-4 rounded-2xl border border-brand-200 shadow-sm text-center min-w-[90px]">
+                                  <p className="text-2xl font-black text-text-main">{formData.files.length}</p>
+                                  <p className="text-[10px] text-text-secondary font-black uppercase">Photos</p>
+                               </div>
+                            </div>
+                          );
+                       })()}
+
+                      {/* Calculation Logic Breakdown */}
+                      <div className="pt-6 border-t border-brand-100 space-y-4">
+                         <p className="text-[10px] font-black text-brand-800 uppercase tracking-widest flex items-center gap-2">
+                            <Cpu size={14} className="text-brand-500" /> AI Policy Analysis
+                         </p>
+                         <div className="grid grid-cols-1 gap-3 text-[12px] text-text-secondary font-medium leading-relaxed">
+                            {formData.policyDetails.extractedPoints.map((point, idx) => (
+                               <p key={idx} dangerouslySetInnerHTML={{ __html: point }} className="text-brand-900" />
+                            ))}
+                            <div className="mt-2 p-4 bg-brand-50/50 rounded-2xl border border-brand-200">
+                               <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest mb-2">Calculation Breakdown</p>
+                               <div className="space-y-1 text-brand-950 font-bold">
+                                  <p>• Rate: ₹{Math.round(formData.policyDetails.sumInsuredPerAcre).toLocaleString()} / Acre</p>
+                                  <p>• Total Farm Area: {(farms.find(f => f.id === formData.farmId)?.areaAcres || 0)} Acres</p>
+                                  <p>• Reported Damage: {formData.damagePercentage}%</p>
+                               </div>
+                               <div className="mt-3 pt-3 border-t border-brand-200 text-[10px] font-medium text-brand-700 italic">
+                                 AI verified: Calculation applied to the total area of the field as per policy guidelines.
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="space-y-4">
+                      <div className="flex justify-center gap-1.5 opacity-60">
+                        <ShieldAlert size={14} className="text-brand-600" />
+                        <p className="text-[10px] font-black text-center text-text-secondary uppercase tracking-[0.2em]">VERIFYING AS {user?.email?.split('@')[0]}***</p>
+                      </div>
+                      <input type="text" maxLength={6} value={formData.otp}
+                          onChange={e => setFormData({ ...formData, otp: e.target.value.replace(/\D/g, '') })}
+                          className="w-full text-center text-5xl tracking-[0.4em] font-black py-8 bg-white border-4 border-surface-border rounded-[2.5rem] focus:border-brand-500 focus:outline-none shadow-inner-soft text-brand-900"
+                          placeholder="000000" />
+                   </div>
+
+                   <div className="flex gap-4">
+                      <button onClick={() => setStep(5)} className="px-8 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black text-lg active:scale-95 transition-all">Back</button>
+                      <button disabled={formData.otp.length !== 6 || loading} onClick={submitClaim}
+                          className="flex-1 bg-brand-500 disabled:opacity-30 disabled:bg-surface-border text-white font-black text-2xl py-6 rounded-[2.5rem] shadow-xl shadow-brand-500/40 flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
+                      >
+                          {loading ? <Loader2 size={32} className="animate-spin" /> : 'Confirm Now'}
+                      </button>
+                   </div>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* AI Monitoring Badge at Footer */}
+        {isAiAssisted && step < 5 && (
+          <div className="bg-brand-900 p-4 text-center">
+             <p className="text-[10px] text-brand-100 font-black uppercase tracking-[0.3em] flex items-center justify-center gap-2">
+                <Cpu size={14} className="animate-pulse" /> AI Engine is Monitoring this application
+             </p>
           </div>
         )}
       </div>

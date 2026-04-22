@@ -17,18 +17,19 @@ public class OtpService {
 
     private final EmailOtpTokenRepository otpTokenRepository;
     private final PasswordEncoder passwordEncoder;
-    
-    // We will inject a Mail service later, for now we log
-    // private final JavaMailSender javaMailSender;
+    private final EmailService emailService;
 
     @Autowired
-    public OtpService(EmailOtpTokenRepository otpTokenRepository, PasswordEncoder passwordEncoder) {
+    public OtpService(EmailOtpTokenRepository otpTokenRepository, 
+                      PasswordEncoder passwordEncoder,
+                      EmailService emailService) {
         this.otpTokenRepository = otpTokenRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     /**
-     * Generates a 6-digit OTP, hashes it, stores it, and (for now) logs it.
+     * Generates a 6-digit OTP, hashes it, stores it, and sends it via EmailService.
      */
     @Transactional
     public String generateAndSendOtp(String email, OtpPurpose purpose) {
@@ -37,16 +38,17 @@ public class OtpService {
         int otpValue = 100000 + random.nextInt(900000);
         String otp = String.valueOf(otpValue);
 
-        // 2. Hash it
+        // 2. Hash it for secure storage
         String hashedOtp = passwordEncoder.encode(otp);
 
-        // 3. Save to DB (invalidate any previous valid tokens for this user+purpose)
+        // 3. Mark any previous valid tokens for this user+purpose as used/invalid
         Optional<EmailOtpToken> existingOtp = otpTokenRepository.findByEmailAndPurposeAndIsUsedFalseOrderByCreatedAtDesc(email, purpose);
         existingOtp.ifPresent(token -> {
             token.setUsed(true);
             otpTokenRepository.save(token);
         });
 
+        // 4. Save new verification token to DB
         EmailOtpToken newToken = new EmailOtpToken();
         newToken.setEmail(email);
         newToken.setOtpHash(hashedOtp);
@@ -56,11 +58,11 @@ public class OtpService {
         
         otpTokenRepository.save(newToken);
 
-        // 4. Send email (Mocked for now)
-        sendMockEmail(email, otp, purpose);
+        // 5. Dispatch real email via SMTP
+        emailService.sendOtpEmail(email, otp);
         
-        // Return OTP for testing purposes if needed (in prod, never return it in API response)
-        // For security, true prod implementations only return a success message
+        // Note: In a final production build, we might returned void or a boolean
+        // For now, we return it so the caller can handle any immediate dev-testing needs
         return otp;
     }
 
@@ -82,7 +84,7 @@ public class OtpService {
             return false;
         }
 
-        // Verify hash
+        // Verify hash matches
         boolean isMatch = passwordEncoder.matches(otp, token.getOtpHash());
 
         if (isMatch) {
@@ -92,13 +94,5 @@ public class OtpService {
         }
 
         return false;
-    }
-
-    private void sendMockEmail(String email, String otp, OtpPurpose purpose) {
-        System.out.println("=========================================================");
-        System.out.println("MOCK EMAIL SENT TO: " + email);
-        System.out.println("PURPOSE: " + purpose);
-        System.out.println("YOUR OTP IS: " + otp);
-        System.out.println("=========================================================");
     }
 }

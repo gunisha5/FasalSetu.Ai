@@ -15,8 +15,7 @@ export default function Splash() {
   }, [navigate]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-surface-dark relative overflow-hidden">
-      {/* Background glow effects */}
+    <div className="flex flex-col items-center justify-center min-h-screen bg-white relative overflow-hidden">      {/* Background glow effects */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-500/20 rounded-full blur-[100px]" />
       
       <motion.div
@@ -39,10 +38,10 @@ export default function Splash() {
           <Sprout size={48} className="text-white" />
         </motion.div>
         
-        <h1 className="text-4xl font-bold tracking-tight text-white mb-2">
-          Fasal<span className="text-brand-400">Setu</span>.Ai
+        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 mb-2">
+          Fasal<span className="text-brand-700">Setu</span>.Ai
         </h1>
-        <p className="text-gray-400 text-sm tracking-widest uppercase">
+        <p className="text-slate-700 text-sm tracking-widest uppercase">
           AI Crop Assessment
         </p>
       </motion.div>

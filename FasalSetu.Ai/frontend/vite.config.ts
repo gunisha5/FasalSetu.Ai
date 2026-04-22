@@ -12,8 +12,8 @@ export default defineConfig({
         name: 'FasalSetu.Ai',
         short_name: 'FasalSetu',
         description: 'AI-powered crop insurance claim filing',
-        theme_color: '#22c55e',
-        background_color: '#0a1628',
+        theme_color: '#10b981',
+        background_color: '#ffffff',
         display: 'standalone',
         start_url: '/',
         icons: [

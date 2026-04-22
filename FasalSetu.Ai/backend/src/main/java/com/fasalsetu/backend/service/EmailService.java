@@ -15,24 +15,12 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
+    /**
+     * Sends a standard OTP email to the user.
+     */
     public void sendOtpEmail(String toEmail, String otpCode) {
-        // ─── DEV MODE: Always log the OTP so you can test without real Gmail ─────
-        System.out.println("==============================================");
-        System.out.println("  OTP for " + toEmail + "  →  " + otpCode);
-        System.out.println("==============================================");
+        System.out.println("[EmailService] Attempting to send OTP to: " + toEmail);
 
-        // ─── Skip real email if credentials are still placeholder ──────────────
-        if (fromEmail == null
-                || fromEmail.isBlank()
-                || fromEmail.equals("your-email@gmail.com")) {
-            System.out.println("[EmailService] Skipping SMTP — placeholder credentials detected.");
-            System.out.println("[EmailService] To enable real emails, update application.properties:");
-            System.out.println("  spring.mail.username=your-real@gmail.com");
-            System.out.println("  spring.mail.password=your-16-char-app-password");
-            return;
-        }
-
-        // ─── Real Gmail SMTP dispatch ──────────────────────────────────────────
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
@@ -42,13 +30,21 @@ public class EmailService {
                 "Welcome to FasalSetu.Ai!\n\n" +
                 "Your verification code is: " + otpCode + "\n\n" +
                 "This code expires in 10 minutes. Do not share it with anyone.\n\n" +
+                "If you did not request this, please ignore this email.\n\n" +
                 "— FasalSetu.Ai Team"
             );
+            
             mailSender.send(message);
             System.out.println("[EmailService] OTP email sent successfully to: " + toEmail);
         } catch (Exception e) {
-            System.err.println("[EmailService] SMTP send failed: " + e.getMessage());
-            // OTP is already saved in DB — user can still verify if they read logs
+            System.err.println("[EmailService] FAILED to send email to: " + toEmail);
+            System.err.println("[EmailService] Reason: " + e.getMessage());
+            System.err.println("[EmailService] CHECK: application.properties for correct gmail/app-password.");
+            
+            // Still log to console for dev visibility
+            System.out.println("==============================================");
+            System.out.println("  DEV FALLBACK: OTP for " + toEmail + " is → " + otpCode);
+            System.out.println("==============================================");
         }
     }
 }

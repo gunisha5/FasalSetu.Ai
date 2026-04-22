@@ -7,20 +7,20 @@ const SLIDES = [
   {
     id: 1,
     title: 'AI Satellite Analysis',
-    description: 'Instant, automated damage assessment using multi-spectral Sentinel-2 satellite imagery.',
-    icon: <Satellite size={80} className="text-brand-400" />
+    description: 'AI-powered satellite analysis for real-time crop damage and flood impact detection.',
+    icon: <Satellite size={80} className="text-brand-teal" />
   },
   {
     id: 2,
     title: 'Smart Policy Parsing',
     description: 'Upload your insurance documents. Our AI extracts coverage and calculated entitled payouts instantly.',
-    icon: <ShieldCheck size={80} className="text-brand-400" />
+    icon: <ShieldCheck size={80} className="text-brand-teal" />
   },
   {
     id: 3,
     title: 'Rapid Settlement',
     description: 'Reduce manual wait times from weeks to hours with real-time tracking.',
-    icon: <Zap size={80} className="text-brand-400" />
+    icon: <Zap size={80} className="text-brand-teal" />
   }
 ];
 
@@ -37,15 +37,15 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-surface-dark px-6 py-12 relative overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-white px-6 py-12 relative overflow-hidden">
       {/* Dynamic Background Glow mapped to slide changes */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-72 h-72 bg-brand-500/10 rounded-full blur-[80px]" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-72 h-72 bg-brand-500/5 rounded-full blur-[80px]" />
       
       {/* Skip button connecting to login */}
       <div className="flex justify-end relative z-10">
         <button 
           onClick={() => navigate('/login')}
-          className="text-gray-400 text-sm font-medium hover:text-white transition-colors"
+          className="text-text-secondary text-sm font-bold hover:text-brand-teal transition-colors"
         >
           Skip
         </button>
@@ -61,13 +61,13 @@ export default function Onboarding() {
             transition={{ duration: 0.3 }}
             className="flex flex-col items-center text-center w-full max-w-sm"
           >
-            <div className="bg-surface-card border border-white/5 p-8 rounded-[2rem] shadow-2xl mb-8">
+            <div className="bg-white border border-surface-border p-8 rounded-[2rem] shadow-premium mb-8">
               {SLIDES[currentIndex].icon}
             </div>
-            <h2 className="text-2xl font-bold text-white mb-4">
+            <h2 className="text-3xl font-black text-brand-teal mb-4 tracking-tight">
               {SLIDES[currentIndex].title}
             </h2>
-            <p className="text-gray-400 leading-relaxed text-sm">
+            <p className="text-text-secondary leading-relaxed text-sm font-bold px-4">
               {SLIDES[currentIndex].description}
             </p>
           </motion.div>

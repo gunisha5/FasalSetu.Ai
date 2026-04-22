@@ -4,7 +4,7 @@ import '@geoman-io/leaflet-geoman-free';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 
 interface MapPolygonDrawerProps {
-  onPolygonDrawn: (geoJson: any, areaHectares: number) => void;
+  onPolygonDrawn: (geoJson: any, areaAcres: number) => void;
 }
 
 export default function MapPolygonDrawer({ onPolygonDrawn }: MapPolygonDrawerProps) {
@@ -61,8 +61,8 @@ export default function MapPolygonDrawer({ onPolygonDrawn }: MapPolygonDrawerPro
         }
         
         const areaSqMeters = Math.abs(area) / 2;
-        const hectares = areaSqMeters / 10000;
-        return Math.round(hectares * 100) / 100; // Round to 2 decimal places
+        const acres = areaSqMeters / 4046.86;
+        return Math.round(acres * 100) / 100; // Round to 2 decimal places
       } catch (e) {
         console.error('Area calculation error:', e);
         return 0;
@@ -73,9 +73,9 @@ export default function MapPolygonDrawer({ onPolygonDrawn }: MapPolygonDrawerPro
     map.on('pm:create', (e) => {
       const layer = e.layer as any;
       const geoJson = layer.toGeoJSON();
-      const areaHectares = calculateArea(geoJson);
+      const areaAcres = calculateArea(geoJson);
       
-      onPolygonDrawn(geoJson, areaHectares);
+      onPolygonDrawn(geoJson, areaAcres);
       
       // Listen to edits on this specific layer
       layer.on('pm:edit', () => {

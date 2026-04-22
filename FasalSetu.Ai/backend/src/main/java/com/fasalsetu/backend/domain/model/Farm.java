@@ -33,7 +33,11 @@ public class Farm {
     @Column(name = "survey_number")
     private String surveyNumber;
     
-    @Column(name = "area_hectares")
+    @Column(name = "area_acres")
+    private Double areaAcres;
+    
+    // Legacy mapping to handle data migration from Hectares to Acres for existing records
+    @Column(name = "area_hectares", insertable = false, updatable = false)
     private Double areaHectares;
     
     // Simplistic mock for geospatial data until JTS topology suite is integrated
@@ -69,8 +73,14 @@ public class Farm {
     public void setVillage(String village) { this.village = village; }
     public String getPrimaryCrop() { return primaryCrop; }
     public void setPrimaryCrop(String primaryCrop) { this.primaryCrop = primaryCrop; }
-    public Double getAreaHectares() { return areaHectares; }
-    public void setAreaHectares(Double areaHectares) { this.areaHectares = areaHectares; }
+    public Double getAreaAcres() { 
+        if (areaAcres == null && areaHectares != null) {
+            // Fallback for existing data: Convert Hectares to Acres (1 Ha = 2.471 Ac)
+            return Math.round(areaHectares * 2.471 * 100.0) / 100.0;
+        }
+        return areaAcres; 
+    }
+    public void setAreaAcres(Double areaAcres) { this.areaAcres = areaAcres; }
     public String getBoundaryGeoJson() { return boundaryGeoJson; }
     public void setBoundaryGeoJson(String boundaryGeoJson) { this.boundaryGeoJson = boundaryGeoJson; }
     public String getSoilType() { return soilType; }

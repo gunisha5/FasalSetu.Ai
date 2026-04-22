@@ -16,6 +16,11 @@ public class AiIntegrationService {
     private final RestTemplate restTemplate = new RestTemplate();
     private static final String AI_ENGINE_URL = "http://localhost:8001/analyze";
 
+    public static class DamageRequest {
+        public double latitude;
+        public double longitude;
+        public String claim_date;
+        public String district;
         public String crop;
         public String farmer_id;
         public String image_b64;

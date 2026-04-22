@@ -22,14 +22,16 @@ def generate_mock_data(num_samples: int = 200):
     data = []
     for _ in range(num_samples // 3):
         # Flood cases (High NDWI, Drop in SAR, High Rainfall)
+        # Added Noise: +- 15% variance to simulate sensor error
         rain = random.uniform(5.0, 25.0)
+        noise = lambda: random.uniform(0.85, 1.15)
         data.append({
-            'delta_ndvi': random.uniform(-0.1, 0.1),
-            'delta_ndwi': random.uniform(0.25, 0.6),
-            'delta_sar': random.uniform(-5.0, -2.0),
+            'delta_ndvi': random.uniform(-0.1, 0.1) * noise(),
+            'delta_ndwi': random.uniform(0.25, 0.6) * noise(),
+            'delta_sar': random.uniform(-5.0, -2.0) * noise(),
             'is_historical_flood': 1,
             'is_historical_drought': 0,
-            'rainfall_mm': rain,
+            'rainfall_mm': rain * noise(),
             'weather_flood_risk': 1 if rain >= config.WEATHER_FLOOD_RAIN_THRESHOLD_MM else 0,
             'weather_drought_risk': 0,
             'label': 'FLOOD'
@@ -37,27 +39,31 @@ def generate_mock_data(num_samples: int = 200):
     for _ in range(num_samples // 3):
         # Drought cases (Severe drop in NDVI, Low Rainfall, Low Humidity)
         rain = random.uniform(0.0, 0.1)
+        noise = lambda: random.uniform(0.85, 1.15)
         data.append({
-            'delta_ndvi': random.uniform(-0.6, -0.25),
-            'delta_ndwi': random.uniform(-0.3, 0.0),
-            'delta_sar': random.uniform(-1.0, 1.0),
+            'delta_ndvi': random.uniform(-0.6, -0.25) * noise(),
+            'delta_ndwi': random.uniform(-0.3, 0.0) * noise(),
+            'delta_sar': random.uniform(-1.0, 1.0) * noise(),
             'is_historical_flood': 0,
             'is_historical_drought': 1,
-            'rainfall_mm': rain,
+            'rainfall_mm': rain * noise(),
             'weather_flood_risk': 0,
-            'weather_drought_risk': 1, # Simplified proxy
+            'weather_drought_risk': 1,
             'label': 'DROUGHT'
         })
     for _ in range(num_samples - (2 * (num_samples // 3))):
-        # Normal cases
-        rain = random.uniform(0.0, 3.0)
+        # Normal cases (with "Difficult" cases)
+        rain = random.uniform(0.0, 3.5)
+        noise = lambda: random.uniform(0.85, 1.15)
+        # Occasionally simulate a "high-looking" NDWI that isn't a flood to test model specificity
+        difficult_ndwi = random.uniform(0.1, 0.28) if random.random() > 0.8 else random.uniform(-0.1, 0.1)
         data.append({
-            'delta_ndvi': random.uniform(-0.1, 0.15),
-            'delta_ndwi': random.uniform(-0.1, 0.1),
-            'delta_sar': random.uniform(-1.0, 1.0),
+            'delta_ndvi': random.uniform(-0.1, 0.15) * noise(),
+            'delta_ndwi': difficult_ndwi * noise(),
+            'delta_sar': random.uniform(-1.0, 1.0) * noise(),
             'is_historical_flood': 0,
             'is_historical_drought': 0,
-            'rainfall_mm': rain,
+            'rainfall_mm': rain * noise(),
             'weather_flood_risk': 0,
             'weather_drought_risk': 0,
             'label': 'NORMAL'

@@ -33,7 +33,7 @@ public class FarmService {
         existing.setDistrict(updatedFarm.getDistrict());
         existing.setVillage(updatedFarm.getVillage());
         existing.setPrimaryCrop(updatedFarm.getPrimaryCrop());
-        existing.setAreaHectares(updatedFarm.getAreaHectares());
+        existing.setAreaAcres(updatedFarm.getAreaAcres());
         existing.setSoilType(updatedFarm.getSoilType());
         existing.setIrrigationType(updatedFarm.getIrrigationType());
         existing.setTaluka(updatedFarm.getTaluka());

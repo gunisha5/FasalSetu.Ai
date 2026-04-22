@@ -1,16 +1,19 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Map as MapIcon, ClipboardList, User, LogOut } from 'lucide-react';
+import { LayoutDashboard, Map as MapIcon, ClipboardList, User, LogOut, Bell, Shrub } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { motion } from 'framer-motion';
+
 
 export default function FarmerLayout() {
   const { user, logout } = useAuthStore();
+  const displayName = user?.fullName || 'Farmer';
   const navigate = useNavigate();
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
   const navItems = [
     { name: 'Home', path: '/farmer/dashboard', icon: LayoutDashboard },
-    { name: 'My Farm', path: '/farmer/farms', icon: MapIcon },
+    { name: 'My Fields', path: '/farmer/farms', icon: MapIcon },
     { name: 'Claims', path: '/farmer/claims', icon: ClipboardList },
     { name: 'Profile', path: '/farmer/profile', icon: User },
   ];
@@ -19,70 +22,113 @@ export default function FarmerLayout() {
     <div className="min-h-screen bg-surface-bg flex flex-col md:flex-row text-text-main font-sans overflow-hidden">
       
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 border-r border-surface-border bg-white shadow-xl p-6 z-20">
-        <div className="flex items-center gap-2 mb-12">
-          <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
-            <LayoutDashboard size={20} />
+      <aside className="hidden md:flex flex-col w-72 border-r border-surface-border bg-white p-8 z-20 shadow-premium">
+        <div className="flex items-center gap-3 mb-12 group cursor-default">
+          <div className="w-12 h-12 bg-brand-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-brand-500/30 group-hover:rotate-12 transition-transform duration-300">
+            <Shrub size={24} />
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-brand-700">FasalSetu</h2>
+          <div>
+            <h2 className="text-2xl font-black tracking-tight text-brand-900 leading-none">FasalSetu</h2>
+            <p className="text-[10px] font-black uppercase tracking-widest text-brand-500 mt-1">Smart Farming</p>
+          </div>
         </div>
         
-        <nav className="flex-1 space-y-2">
+        <nav className="flex-1 space-y-3">
           {navItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 ${
+                `flex items-center gap-4 px-5 py-4 rounded-[1.5rem] transition-all duration-300 group ${
                   isActive 
-                    ? 'bg-brand-500 text-white font-semibold shadow-lg shadow-brand-500/30' 
+                    ? 'bg-brand-500 text-white font-bold shadow-lg shadow-brand-500/30' 
                     : 'text-text-secondary hover:text-brand-600 hover:bg-brand-50'
                 }`
               }
             >
-              <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-              <span>{item.name}</span>
+              {({ isActive }) => (
+                <>
+                  <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'scale-110' : 'group-hover:scale-110 transition-transform'} />
+                  <span className="text-sm tracking-wide">{item.name}</span>
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
 
-        {/* Logout */}
-        <div className="mt-6 pt-6 border-t border-surface-border">
-          <div className="text-xs text-text-secondary px-4 mb-2 truncate font-medium">{user?.email}</div>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-text-secondary hover:text-red-600 hover:bg-red-50 transition-all text-sm font-semibold"
-          >
-            <LogOut size={18} strokeWidth={2.5} /><span>Sign Out</span>
-          </button>
+        {/* Profile Card */}
+        <div className="mt-8 pt-8 border-t border-surface-border">
+          <div className="bg-brand-50 rounded-3xl p-5 border border-brand-100/50">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-brand-600 font-black shadow-sm">
+                {displayName?.[0] || 'F'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-black text-brand-900 truncate">{displayName}</p>
+                <p className="text-[10px] font-bold text-brand-600 truncate uppercase mt-0.5">{user?.role || 'Verified User'}</p>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-white border border-brand-100 rounded-xl text-xs font-black text-brand-700 hover:bg-brand-100 hover:text-red-600 transition-all active:scale-95"
+            >
+              <LogOut size={14} strokeWidth={3} /> Sign Out
+            </button>
+          </div>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-y-auto pb-24 md:pb-0 relative scroll-smooth bg-surface-bg">
+      <main className="flex-1 flex flex-col h-screen overflow-y-auto pb-28 md:pb-0 relative scroll-smooth bg-surface-bg custom-scrollbar">
+        {/* Top Header for Mobile */}
+        <header className="md:hidden glass sticky top-0 z-40 px-6 py-4 flex justify-between items-center border-b border-surface-border/50">
+          <div className="flex items-center gap-2">
+             <Shrub size={20} className="text-brand-600" />
+             <span className="text-xl font-black text-brand-900 tracking-tight">FasalSetu</span>
+          </div>
+          <button className="w-10 h-10 bg-white rounded-full border border-surface-border flex items-center justify-center text-text-secondary shadow-sm active:scale-90 transition-transform">
+             <Bell size={18} />
+          </button>
+        </header>
+
         {/* Subtle Decorative Elements */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-500/[0.03] rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-500/[0.02] rounded-full blur-[80px] pointer-events-none" />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-brand-500/[0.04] rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/4 w-[400px] h-[400px] bg-brand-200/[0.04] rounded-full blur-[100px] pointer-events-none" />
         
-        <div className="p-6 md:p-10 max-w-5xl mx-auto w-full relative z-10">
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="p-6 md:p-10 max-w-5xl mx-auto w-full relative z-10"
+        >
           <Outlet />
-        </div>
+        </motion.div>
       </main>
 
-      {/* Mobile Bottom Navigation (PWA Friendly) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-surface-border flex justify-around items-center p-2 pb-6 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
+      {/* Mobile Bottom Navigation (PWA Friendly / Large Touch Targets) */}
+      <nav className="md:hidden fixed bottom-6 left-6 right-6 glass border border-white/40 flex justify-around items-center p-3 z-50 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)]">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-1.5 px-6 py-2 rounded-2xl transition-all duration-300 ${
-                isActive ? 'text-brand-600 font-bold' : 'text-text-secondary'
+              `flex flex-col items-center gap-1 px-4 py-3 rounded-2xl transition-all duration-300 ${
+                isActive ? 'text-brand-600 scale-110' : 'text-text-secondary'
               }`
             }
           >
-            <item.icon size={24} strokeWidth={2.5} className={({ isActive }: any) => isActive ? 'scale-110 drop-shadow-sm' : ''} />
-            <span className="text-[11px] font-bold tracking-wide uppercase">{item.name}</span>
+            {({ isActive }) => (
+              <>
+                <item.icon size={22} strokeWidth={isActive ? 3 : 2} className={isActive ? 'drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]' : ''} />
+                <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-0 scale-75'} transition-all`}>{item.name}</span>
+                {isActive && (
+                  <motion.div 
+                    layoutId="activeTab"
+                    className="absolute -bottom-1 w-1 h-1 bg-brand-500 rounded-full"
+                  />
+                )}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
