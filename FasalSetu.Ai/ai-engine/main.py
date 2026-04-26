@@ -12,12 +12,13 @@ Pipeline (in order of execution):
   5. [Phase 4] Rule/Weight Engine   — Combine all signals → final decision
 """
 
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
+from fastapi import FastAPI, HTTPException, File, UploadFile, Form
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import logging
+import shutil
 from datetime import date
 from historical_validator import validator_instance
 from weather_monitor import weather_monitor_instance
@@ -32,6 +33,7 @@ from report_generator import report_gen
 from email_service import send_report_email
 from nasa_weather import get_historical_weather
 from district_risk import risk_manager
+from policy_parser import extract_policy_text, parse_policy_json, validate_policy_data, calculate_damage, estimate_claim, generate_explanation
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -100,7 +102,11 @@ class DamageResponse(BaseModel):
     status: str
     prediction: Optional[str] = None
     confidence: Optional[float] = None
-    features: Optional[Dict[str, float]] = None
+    damage_percent: Optional[float] = None
+    estimated_claim: Optional[float] = None
+    explanation: Optional[str] = None
+    policy_summary: Optional[Dict[str, Any]] = None
+    features: Optional[Dict[str, Any]] = None
     message: Optional[str] = None
 
 
@@ -115,6 +121,13 @@ def analyze_damage(
     image_b64:  Optional[str] = None,
     lang:       str = "en",
 ) -> DamageResponse:
+    # --- CROP HANDLING FIX ---
+    if not crop or str(crop).lower() == "string":
+        crop = "wheat"
+    crop = str(crop).lower().strip()
+    print("[DEBUG] Using crop:", crop)
+    # -------------------------
+
     # 1. Core Data Retrieval (Satellite features removed)
     is_historical_flood   = validator_instance.get_historical_match(district, claim_date, crop, "FLOOD")
     is_historical_drought = validator_instance.get_historical_match(district, claim_date, crop, "DROUGHT")
@@ -253,30 +266,94 @@ def health():
 
 
 @app.post("/predict", response_model=DamageResponse, tags=["Analysis"])
-def analyze(request: DamageRequest):
+async def analyze(
+    latitude: float = Form(...),
+    longitude: float = Form(...),
+    claim_date: date = Form(...),
+    district: str = Form(...),
+    crop: Optional[str] = Form(None),
+    farmer_id: Optional[str] = Form(None),
+    image_b64: Optional[str] = Form(None),
+    lang: str = Form("en"),
+    policy_pdf: Optional[UploadFile] = File(None)
+):
     """
-    Analyze crop damage for a given farm location and claim date.
-
-    Runs the full 5-layer AI pipeline:
-      Historical → Weather → Satellite → ML → Weighted Engine
-
-    Returns a fully enriched DamageResponse including probabilities,
-    contributing factors, and raw satellite/weather signals for audit.
+    Analyze crop damage and estimate insurance claims.
+    Accepts farm data and an optional policy PDF.
     """
     try:
+        # 1. Run Core AI Analysis
         result = analyze_damage(
-            latitude=request.latitude,
-            longitude=request.longitude,
-            claim_date=request.claim_date,
-            district=request.district,
-            crop=request.crop,
-            farmer_id=request.farmer_id,
-            image_b64=request.image_b64,
-            lang=request.lang
+            latitude=latitude,
+            longitude=longitude,
+            claim_date=claim_date,
+            district=district,
+            crop=crop,
+            farmer_id=farmer_id,
+            image_b64=image_b64,
+            lang=lang
         )
-        return result
+        
+        if result.status == "ERROR":
+            return result
+
+        prediction = result.prediction
+        confidence = result.confidence
+        features = result.features
+
+        # 2. Handle Policy Parsing (if PDF provided)
+        policy = None
+        damage_percent = 0.0
+        claim_amount = 0
+        policy_summary = None
+        explanation = None
+
+        if policy_pdf:
+            # Save temporary file
+            temp_path = f"temp_{policy_pdf.filename}"
+            with open(temp_path, "wb") as buffer:
+                shutil.copyfileobj(policy_pdf.file, buffer)
+            
+            try:
+                # Extraction
+                policy_text = extract_policy_text(temp_path)
+                
+                # Parsing
+                policy_raw = parse_policy_json(policy_text)
+                
+                # Validation
+                policy = validate_policy_data(policy_raw)
+                
+                # Claim Estimation
+                claim_amount = estimate_claim(damage_percent, prediction, policy)
+                
+                # Explanation
+                explanation = generate_explanation(prediction, round(damage_percent, 2), policy, claim_amount)
+                
+                policy_summary = {
+                    "sum_insured": policy["sum_insured"],
+                    "coverage_used": policy["coverage"].get(prediction, 0.0)
+                }
+            finally:
+                # Cleanup
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+
+        print("[API RESPONSE CLAIM]", claim_amount)
+
+        return DamageResponse(
+            status="SUCCESS",
+            prediction=prediction,
+            confidence=confidence,
+            damage_percent=round(damage_percent, 2),
+            estimated_claim=claim_amount,
+            explanation=explanation if policy_pdf else None,
+            policy_summary=policy_summary,
+            features=features
+        )
+
     except Exception as exc:
-        logger.error("analyze_damage failed: %s", exc, exc_info=True)
+        logger.error("analyze failed: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=f"AI Engine error: {str(exc)}")
 
 

@@ -76,8 +76,8 @@ public class ClaimService {
                     saved.setStatus("MANUAL_REVIEW");
                 }
                 
-                // Calculate Payout using Policy-Aware Logic
-                saved.setEstimatedPayout(calculateEstimatedPayout(saved));
+                // Use the claim value directly from AI engine (No local recalculation)
+                saved.setEstimatedPayout(aiResponse.estimated_claim != null ? aiResponse.estimated_claim : 0.0);
             } else {
                 saved.setStatus("AI_ERROR");
                 saved.setAiReasoning("AI Engine was unreachable or returned an error.");
@@ -91,29 +91,11 @@ public class ClaimService {
     }
 
     /**
-     * Policy-Aware Payout Calculation
-     * Formula: min( (TotalSumInsured * Damage% * Coverage%) * Confidence, MaxCap )
+     * @deprecated Use estimated_claim from AI engine instead.
+     * Duplicate logic removed to prevent incorrect claim values.
      */
     private double calculateEstimatedPayout(Claim claim) {
-        double damageScore = claim.getAiDamageScore() != null ? claim.getAiDamageScore() : 0.0;
-        double confidence = claim.getAiConfidence() != null ? claim.getAiConfidence() : 1.0;
-        
-        // Policy Constants (Normally fetched from Insurance Policy Service)
-        double coverageFactor = 0.90;      // 90% coverage
-        double maxClaimCap = 500000.0;    // Maximum ₹ 5 Lakhs per claim
-
-        double sumInsured = claim.getSumInsuredPerAcre() != null ? claim.getSumInsuredPerAcre() : 25000.0;
-        double area = claim.getFarmAreaSnapshot() != null ? claim.getFarmAreaSnapshot() : 1.0;
-        double totalSumInsured = sumInsured * area;
-
-        // Core Calculation
-        double rawDamageValue = totalSumInsured * (damageScore / 100.0);
-        double adjustedPayout = rawDamageValue * coverageFactor * confidence;
-
-        // Apply Policy Cap
-        double finalPayout = Math.min(adjustedPayout, maxClaimCap);
-
-        return Math.round(finalPayout * 100.0) / 100.0;
+        return 0.0;
     }
 
     public List<Claim> getClaimsForFarmer(Long farmerId) {

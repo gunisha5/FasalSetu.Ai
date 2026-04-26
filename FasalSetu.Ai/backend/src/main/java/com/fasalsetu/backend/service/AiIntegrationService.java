@@ -44,6 +44,7 @@ public class AiIntegrationService {
         public String prediction;
         public String reasoning;
         public Map<String, Double> features;
+        public Double estimated_claim;
     }
 
     public DamageResponse analyzeDamage(Farm farm, Claim claim, String lang) {

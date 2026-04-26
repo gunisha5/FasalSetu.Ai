@@ -23,7 +23,7 @@ RELOAD: bool    = os.getenv("AI_ENGINE_RELOAD", "true").lower() == "true"
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE_DIR: Path          = Path(__file__).parent.resolve()
 DATA_DIR: Path          = BASE_DIR.parent          # Project root holds the CSVs
-ICRISAT_CSV: Path       = Path(r"C:\Users\manya\Downloads\FasalSetu.Ai\FasalSetu.Ai\ICRISAT-District Level Data.csv")
+ICRISAT_CSV: Path       = DATA_DIR / "ICRISAT-District Level Data.csv"
 FLOOD_CSV: Path         = DATA_DIR / "India_Flood_Inventory_v3.csv"
 MODEL_PATH: Path        = BASE_DIR / "models" / "random_forest.pkl"
 TRAINING_CSV: Path      = BASE_DIR / "data" / "training_features.csv"

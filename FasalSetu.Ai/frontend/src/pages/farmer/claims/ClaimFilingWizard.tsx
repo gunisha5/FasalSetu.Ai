@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Camera, UploadCloud, CheckCircle, ShieldAlert, Cpu, Loader2, MapPin, Trash2, FileText, CloudRain, Sun, Wind, Bug, Shrub, AlertTriangle } from 'lucide-react';
-import { claimApi, authApi, farmApi, type Farm } from '../../../utils/apiClient';
+import { claimApi, authApi, farmApi, aiApi, type Farm } from '../../../utils/apiClient';
 import { useAuthStore } from '../../../store/authStore';
 import { useUIStore } from '../../../store/uiStore';
 import ErrorBanner from '../../../components/ErrorBanner';
@@ -32,7 +32,8 @@ export default function ClaimFilingWizard() {
       coveredRisks: [] as string[],
       policyUnit: '',
       extractedPoints: [] as string[]
-    }
+    },
+    policyFile: null as File | null
   });
   const [farms, setFarms] = useState<Farm[]>([]);
   const [fetchingFarms, setFetchingFarms] = useState(true);
@@ -76,19 +77,50 @@ export default function ClaimFilingWizard() {
     setLoading(true);
     setError('');
     try {
+      // 1. Verify OTP
       await authApi.verify(user.email, formData.otp, 'CLAIM_SUBMIT');
-      await claimApi.file({ 
+      
+      // 2. Prepare AI Prediction Request
+      const selectedFarm = farms.find(f => f.id === formData.farmId);
+      const predictData = new FormData();
+      predictData.append('latitude', '23.0225'); // Fallback for demo
+      predictData.append('longitude', '72.5714'); // Fallback for demo
+      predictData.append('claim_date', formData.dateOfLoss);
+      predictData.append('district', selectedFarm?.district || 'ahmedabad');
+      predictData.append('crop', selectedFarm?.primaryCrop || 'wheat');
+      predictData.append('farmer_id', String(farmerId));
+      if (formData.policyFile) {
+        predictData.append('policy_pdf', formData.policyFile);
+      }
+
+      // 3. Call AI Engine for immediate analysis
+      const aiRes = await aiApi.predict(predictData);
+      const aiData = aiRes.data;
+
+      // 4. Save Claim to Backend (Java)
+      const claimRes = await claimApi.file({ 
         farmerId, 
         farmId: formData.farmId, 
         calamityType: formData.calamityType,
         dateOfLoss: formData.dateOfLoss,
         sumInsuredPerAcre: formData.policyDetails.sumInsuredPerAcre,
         totalSumInsured: formData.policyDetails.totalSumInsured,
-        farmAreaSnapshot: farms.find(f => f.id === formData.farmId)?.areaAcres || 0
+        farmAreaSnapshot: selectedFarm?.areaAcres || 0,
+        // Sync AI results
+        prediction: aiData.prediction,
+        damage_percent: aiData.damage_percent,
+        estimated_claim: aiData.estimated_claim,
+        explanation: aiData.explanation,
+        policy_summary: aiData.policy_summary
       });
-      navigate('/farmer/claims');
+
+      // 5. Navigate to Result Page with immediate data
+      navigate(`/farmer/claims/${claimRes.data.id}`, { 
+        state: { result: { ...claimRes.data, ...aiData } } 
+      });
+
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Verification failed. Please check your OTP.');
+      setError(err?.response?.data?.message || 'Submission failed. Please check your data and OTP.');
     } finally {
       setLoading(false);
     }
@@ -275,8 +307,6 @@ export default function ClaimFilingWizard() {
                         <label className="text-xs font-black uppercase tracking-widest text-text-secondary">Date of Loss</label>
                         <input 
                           type="date"
-                          max={new Date().toISOString().split('T')[0]}
-                          min={new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
                           value={formData.dateOfLoss}
                           onChange={(e) => setFormData({...formData, dateOfLoss: e.target.value})}
                           className="w-full p-5 border-2 border-surface-border rounded-2xl focus:border-brand-500 outline-none text-text-main font-bold bg-white transition-all shadow-sm focus:shadow-brand-500/10"
@@ -400,12 +430,11 @@ export default function ClaimFilingWizard() {
                     <p className="text-sm font-black text-brand-700 uppercase tracking-widest">{t('claimWizard.uploadPolicy')}</p>
                     <input type="file" accept="application/pdf" className="hidden"
                       onChange={(e) => {
-                          // Smart Policy Scanner Mock
                           const scanSimulation = async () => {
                              const { startLoading, stopLoading } = useUIStore.getState();
                              startLoading();
-                             
-                             const fileName = e.target.files![0].name;
+                             const file = e.target.files![0];
+                             const fileName = file.name;
                              const newPolicy = { 
                                 name: fileName, 
                                 isCovered: true, 
@@ -414,13 +443,10 @@ export default function ClaimFilingWizard() {
                                 scanning: true 
                              };
                              
-                             // Add policy in 'scanning' state
-                             setFormData(p => ({ ...p, policies: [...p.policies, newPolicy] }));
+                             setFormData(p => ({ ...p, policyFile: file, policies: [...p.policies, newPolicy] }));
                              
-                             // Simulate AI Scanner Delay
                              await new Promise(r => setTimeout(r, 2000));
 
-                             // Mock extraction based on Standard Policy Template
                              const policyData = {
                                 insuredArea: 5.0,
                                 unit: 'Acre',

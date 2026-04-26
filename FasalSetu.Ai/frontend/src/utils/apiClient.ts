@@ -1,4 +1,9 @@
 import { api } from './api';
+import axios from 'axios';
+
+const aiApiBase = axios.create({
+  baseURL: 'http://localhost:8001',
+});
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 export const authApi = {
@@ -36,6 +41,8 @@ export interface Farm {
   soilType?: string;
   irrigationType?: string;
   boundaryGeoJson?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export const farmApi = {
@@ -73,6 +80,14 @@ export interface Claim {
   tempAvg?: number;
   floodRisk?: number;
   droughtRisk?: number;
+  prediction?: string;
+  damage_percent?: number;
+  estimated_claim?: number;
+  policy_summary?: {
+    sum_insured: number;
+    coverage_used: number;
+  };
+  explanation?: string;
 }
 
 export const claimApi = {
@@ -87,4 +102,11 @@ export const agentApi = {
   getById: (id: string) => api.get<Claim>(`/agent/claims/${id}`),
   updateStatus: (id: string, status: string, agentNotes: string) =>
     api.put(`/agent/claims/${id}/status`, { status, agentNotes }),
+};
+
+// ─── AI Engine ───────────────────────────────────────────────────────────────
+export const aiApi = {
+  predict: (formData: FormData) => aiApiBase.post('/predict', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
 };

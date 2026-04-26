@@ -14,6 +14,7 @@ class DistrictRiskService:
     def __init__(self, data_path="data/district_risk_dataset.csv"):
         self.data_path = data_path
         self._risk_map = {}
+        self._risk_df_clean = pd.DataFrame(columns=['district_key', 'flood_risk', 'drought_risk'])
         self._load_and_index()
 
     def _load_and_index(self):
