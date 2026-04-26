@@ -58,6 +58,33 @@ public class Claim {
     @Column(name = "visual_drought_score")
     private Double visualDroughtScore;
 
+    @Column(name = "sum_insured_per_acre")
+    private Double sumInsuredPerAcre;
+
+    @Column(name = "total_sum_insured")
+    private Double totalSumInsured;
+
+    @Column(name = "farm_area_snapshot")
+    private Double farmAreaSnapshot;
+
+    @Column(name = "rainfall_mm")
+    private Double rainfallMm;
+
+    @Column(name = "rainfall_7d")
+    private Double rainfall7d;
+
+    @Column(name = "temp_avg")
+    private Double tempAvg;
+
+    @Column(name = "flood_risk")
+    private Double floodRisk;
+
+    @Column(name = "drought_risk")
+    private Double droughtRisk;
+
+    @Column(name = "estimated_payout")
+    private Double estimatedPayout;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -95,4 +122,33 @@ public class Claim {
     public void setVisualFloodScore(Double visualFloodScore) { this.visualFloodScore = visualFloodScore; }
     public Double getVisualDroughtScore() { return visualDroughtScore; }
     public void setVisualDroughtScore(Double visualDroughtScore) { this.visualDroughtScore = visualDroughtScore; }
+
+    public Double getSumInsuredPerAcre() { return sumInsuredPerAcre; }
+    public void setSumInsuredPerAcre(Double sumInsuredPerAcre) { this.sumInsuredPerAcre = sumInsuredPerAcre; }
+
+    public Double getTotalSumInsured() { return totalSumInsured; }
+    public void setTotalSumInsured(Double totalSumInsured) { this.totalSumInsured = totalSumInsured; }
+
+    public Double getFarmAreaSnapshot() { return farmAreaSnapshot; }
+    public void setFarmAreaSnapshot(Double farmAreaSnapshot) { this.farmAreaSnapshot = farmAreaSnapshot; }
+
+    public Double getRainfallMm() { return rainfallMm; }
+    public void setRainfallMm(Double rainfallMm) { this.rainfallMm = rainfallMm; }
+
+    public Double getRainfall7d() { return rainfall7d; }
+    public void setRainfall7d(Double rainfall7d) { this.rainfall7d = rainfall7d; }
+
+    public Double getTempAvg() { return tempAvg; }
+    public void setTempAvg(Double tempAvg) { this.tempAvg = tempAvg; }
+
+    public Double getFloodRisk() { return floodRisk; }
+    public void setFloodRisk(Double floodRisk) { this.floodRisk = floodRisk; }
+
+    public Double getDroughtRisk() { return droughtRisk; }
+    public void setDroughtRisk(Double droughtRisk) { this.droughtRisk = droughtRisk; }
+
+    public Double getEstimatedPayout() { return estimatedPayout; }
+    public void setEstimatedPayout(Double estimatedPayout) { this.estimatedPayout = estimatedPayout; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
 }

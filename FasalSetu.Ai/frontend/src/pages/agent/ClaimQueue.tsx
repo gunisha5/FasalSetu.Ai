@@ -1,21 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, AlertTriangle, Cpu } from 'lucide-react';
+import { Search, Filter, AlertTriangle, Cpu, Loader2 } from 'lucide-react';
+import axios from 'axios';
 
 export default function ClaimQueue() {
-  const [tab, setTab] = useState('AI-Assisted');
+  const [tab, setTab] = useState('All');
+  const [claims, setClaims] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const QUEUE = [
-    { id: 'CLM-00482', farmer: 'Ramesh K.', type: 'Flood', aiScore: 74, payout: '1,48,000', hrs: 2, needsManual: false },
-    { id: 'CLM-00483', farmer: 'Suresh M.', type: 'Flood', aiScore: 89, payout: '2,10,000', hrs: 4, needsManual: false },
-    { id: 'CLM-00490', farmer: 'Anil D.', type: 'Pest', aiScore: null, payout: 'Pending', hrs: 12, needsManual: true },
-    { id: 'CLM-00491', farmer: 'Vikram S.', type: 'Drought', aiScore: -1, payout: 'Pending', hrs: 24, needsManual: true, warning: 'Cloud Cover' },
-  ];
+  useEffect(() => {
+    axios.get('http://localhost:8080/api/agent/claims')
+      .then(res => setClaims(res.data))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const filtered = QUEUE.filter(c => {
+  const filtered = claims.filter(c => {
     if(tab === 'All') return true;
-    if(tab === 'AI-Assisted') return !c.needsManual;
-    if(tab === 'Manual Review') return c.needsManual;
+    if(tab === 'AI-Assisted') return c.aiDamageScore != null;
+    if(tab === 'Manual Review') return c.aiDamageScore == null;
     return true;
   });
 
@@ -63,38 +65,37 @@ export default function ClaimQueue() {
                </tr>
              </thead>
              <tbody className="divide-y divide-white/5">
-                {filtered.map(c => (
-                  <tr key={c.id} className="hover:bg-white/5 transition-colors">
-                     <td className="p-4 font-mono font-bold text-white">{c.id}</td>
-                     <td className="p-4 text-gray-300">{c.farmer}</td>
-                     <td className="p-4">
-                        <span className="px-2 py-1 bg-white/10 rounded text-xs">{c.type}</span>
-                     </td>
-                     <td className="p-4">
-                        {(c.aiScore ?? 0) > 0 ? (
-
-                           <div className="flex items-center gap-2 text-indigo-400">
-                             <Cpu size={14} /> <span>{c.aiScore} / 100</span>
-                           </div>
-                        ) : c.warning ? (
-                           <div className="flex items-center gap-2 text-yellow-500">
-                             <AlertTriangle size={14} /> <span className="text-xs">{c.warning}</span>
-                           </div>
-                        ) : (
-                           <span className="text-gray-600 text-xs">N/A (Manual)</span>
-                        )}
-                     </td>
-                     <td className="p-4 font-mono text-right font-medium">{c.payout}</td>
-                     <td className="p-4 text-center">
-                        <Link to={`/agent/claims/${c.id}`} className="px-4 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded font-medium text-xs shadow transition-colors inline-block">
-                           Review
-                        </Link>
-                     </td>
-                  </tr>
+                {loading ? (
+                   <tr><td colSpan={6} className="p-10 text-center"><Loader2 className="animate-spin inline mr-2" /> Loading claims...</td></tr>
+                ) : filtered.map(c => (
+                   <tr key={c.id} className="hover:bg-white/5 transition-colors">
+                      <td className="p-4 font-mono font-bold text-white">#{c.id}</td>
+                      <td className="p-4 text-gray-300">Farmer #{c.farmerId}</td>
+                      <td className="p-4">
+                         <span className="px-2 py-1 bg-white/10 rounded text-xs">{c.calamityType}</span>
+                      </td>
+                      <td className="p-4">
+                         {c.aiDamageScore != null ? (
+                            <div className="flex items-center gap-2 text-indigo-400">
+                              <Cpu size={14} /> <span>{Math.round(c.aiDamageScore)}% Match</span>
+                            </div>
+                         ) : (
+                            <span className="text-gray-600 text-xs">N/A (Manual)</span>
+                         )}
+                      </td>
+                      <td className="p-4 font-mono text-right font-medium">
+                         {c.estimatedPayout ? `₹${c.estimatedPayout.toLocaleString()}` : '--'}
+                      </td>
+                      <td className="p-4 text-center">
+                         <Link to={`/agent/claims/${c.id}`} className="px-4 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded font-medium text-xs shadow transition-colors inline-block">
+                            Review
+                         </Link>
+                      </td>
+                   </tr>
                 ))}
              </tbody>
            </table>
-           {filtered.length === 0 && (
+           {filtered.length === 0 && !loading && (
               <div className="p-10 text-center text-gray-500">No claims matching this filter.</div>
            )}
         </div>

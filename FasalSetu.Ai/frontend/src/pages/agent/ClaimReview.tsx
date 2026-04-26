@@ -20,13 +20,10 @@ export default function ClaimReview() {
     async function load() {
       try {
         setLoading('fetch');
-        const claimRes = await agentApi.getAllClaims();
-        const found = claimRes.data.find(c => c.id === Number(id));
-        if (found) {
-          setClaim(found);
-          const farmRes = await farmApi.getById(found.farmId!);
-          setFarm(farmRes.data);
-        }
+        const claimRes = await agentApi.getById(id!);
+        setClaim(claimRes.data);
+        const farmRes = await farmApi.getById(claimRes.data.farmId!);
+        setFarm(farmRes.data);
       } catch (err) {
         setError('Failed to load claim details.');
       } finally {
@@ -36,28 +33,18 @@ export default function ClaimReview() {
     load();
   }, [id]);
 
-  const handleApprove = async () => {
-    setError('');
-    setLoading('approve');
-    try {
-      await agentApi.approve(id!, agentNotes);
-      navigate('/agent/claims');
-    } catch {
-      setError('Failed to approve. Please try again.');
-    } finally {
-      setLoading(null);
+  const handleUpdateStatus = async (status: string) => {
+    if (status === 'REJECTED' && !agentNotes.trim()) { 
+      setError('Please add agent notes explaining the rejection reason.'); 
+      return; 
     }
-  };
-
-  const handleReject = async () => {
-    if (!agentNotes.trim()) { setError('Please add agent notes explaining the rejection reason.'); return; }
     setError('');
-    setLoading('reject');
+    setLoading(status === 'APPROVED' ? 'approve' : 'reject');
     try {
-      await agentApi.reject(id!, agentNotes);
+      await agentApi.updateStatus(id!, status, agentNotes);
       navigate('/agent/claims');
     } catch {
-      setError('Failed to reject. Please try again.');
+      setError('Failed to update status. Please try again.');
     } finally {
       setLoading(null);
     }
@@ -171,11 +158,11 @@ export default function ClaimReview() {
               </div>
 
               <div className="flex flex-col gap-3 pt-4 border-t border-white/5">
-                <button onClick={handleApprove} disabled={!!loading}
+                <button onClick={() => handleUpdateStatus('APPROVED')} disabled={!!loading}
                   className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-60 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-colors">
                   {loading === 'approve' ? <Loader2 size={18} className="animate-spin" /> : <><CheckCircle size={18} /> Approve Payout</>}
                 </button>
-                <button onClick={handleReject} disabled={!!loading}
+                <button onClick={() => handleUpdateStatus('REJECTED')} disabled={!!loading}
                   className="w-full text-gray-500 hover:text-white disabled:opacity-40 text-sm font-medium py-2 transition-colors flex items-center justify-center gap-2">
                   {loading === 'reject' ? <Loader2 size={16} className="animate-spin" /> : <><XCircle size={16} /> Mark as Fraudulent</>}
                 </button>

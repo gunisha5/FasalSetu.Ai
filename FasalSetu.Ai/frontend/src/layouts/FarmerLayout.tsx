@@ -2,6 +2,8 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Map as MapIcon, ClipboardList, User, LogOut, Bell, Shrub } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 
 export default function FarmerLayout() {
@@ -11,11 +13,12 @@ export default function FarmerLayout() {
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
+  const { t } = useTranslation();
   const navItems = [
-    { name: 'Home', path: '/farmer/dashboard', icon: LayoutDashboard },
-    { name: 'My Fields', path: '/farmer/farms', icon: MapIcon },
-    { name: 'Claims', path: '/farmer/claims', icon: ClipboardList },
-    { name: 'Profile', path: '/farmer/profile', icon: User },
+    { name: t('common.home'), path: '/farmer/dashboard', icon: LayoutDashboard },
+    { name: t('common.fields'), path: '/farmer/farms', icon: MapIcon },
+    { name: t('common.claims'), path: '/farmer/claims', icon: ClipboardList },
+    { name: t('common.profile'), path: '/farmer/profile', icon: User },
   ];
 
   return (
@@ -29,7 +32,7 @@ export default function FarmerLayout() {
           </div>
           <div>
             <h2 className="text-2xl font-black tracking-tight text-brand-900 leading-none">FasalSetu</h2>
-            <p className="text-[10px] font-black uppercase tracking-widest text-brand-500 mt-1">Smart Farming</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-brand-500 mt-1">{t('common.smartFarming')}</p>
           </div>
         </div>
         
@@ -56,6 +59,10 @@ export default function FarmerLayout() {
           ))}
         </nav>
 
+        <div className="mb-6">
+          <LanguageSwitcher />
+        </div>
+
         {/* Profile Card */}
         <div className="mt-8 pt-8 border-t border-surface-border">
           <div className="bg-brand-50 rounded-3xl p-5 border border-brand-100/50">
@@ -65,14 +72,14 @@ export default function FarmerLayout() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-black text-brand-900 truncate">{displayName}</p>
-                <p className="text-[10px] font-bold text-brand-600 truncate uppercase mt-0.5">{user?.role || 'Verified User'}</p>
+                <p className="text-[10px] font-bold text-brand-600 truncate uppercase mt-0.5">{user?.role || t('common.verifiedUser')}</p>
               </div>
             </div>
             <button
               onClick={handleLogout}
               className="w-full flex items-center justify-center gap-2 py-2.5 bg-white border border-brand-100 rounded-xl text-xs font-black text-brand-700 hover:bg-brand-100 hover:text-red-600 transition-all active:scale-95"
             >
-              <LogOut size={14} strokeWidth={3} /> Sign Out
+              <LogOut size={14} strokeWidth={3} /> {t('common.logout')}
             </button>
           </div>
         </div>
@@ -86,9 +93,12 @@ export default function FarmerLayout() {
              <Shrub size={20} className="text-brand-600" />
              <span className="text-xl font-black text-brand-900 tracking-tight">FasalSetu</span>
           </div>
-          <button className="w-10 h-10 bg-white rounded-full border border-surface-border flex items-center justify-center text-text-secondary shadow-sm active:scale-90 transition-transform">
-             <Bell size={18} />
-          </button>
+          <div className="flex items-center gap-3">
+             <LanguageSwitcher />
+             <button className="w-10 h-10 bg-white rounded-full border border-surface-border flex items-center justify-center text-text-secondary shadow-sm active:scale-90 transition-transform">
+                <Bell size={18} />
+             </button>
+          </div>
         </header>
 
         {/* Subtle Decorative Elements */}
@@ -136,4 +146,3 @@ export default function FarmerLayout() {
     </div>
   );
 }
-

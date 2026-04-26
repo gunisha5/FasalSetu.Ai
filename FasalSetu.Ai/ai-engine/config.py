@@ -23,15 +23,22 @@ RELOAD: bool    = os.getenv("AI_ENGINE_RELOAD", "true").lower() == "true"
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE_DIR: Path          = Path(__file__).parent.resolve()
 DATA_DIR: Path          = BASE_DIR.parent          # Project root holds the CSVs
-ICRISAT_CSV: Path       = DATA_DIR / "ICRISAT-District Level Data.csv"
+ICRISAT_CSV: Path       = Path(r"C:\Users\manya\Downloads\FasalSetu.Ai\FasalSetu.Ai\ICRISAT-District Level Data.csv")
 FLOOD_CSV: Path         = DATA_DIR / "India_Flood_Inventory_v3.csv"
 MODEL_PATH: Path        = BASE_DIR / "models" / "random_forest.pkl"
 TRAINING_CSV: Path      = BASE_DIR / "data" / "training_features.csv"
 
 # ── Google Earth Engine ───────────────────────────────────────────────────────
 GEE_SERVICE_ACCOUNT: str    = os.getenv("GEE_SERVICE_ACCOUNT", "")
-GEE_KEY_FILE: str           = os.getenv("GEE_KEY_FILE", "")      # Path to SA JSON key
-GEE_PROJECT_ID: str         = os.getenv("GEE_PROJECT_ID", "ee-fasalsetu") # Your Cloud Project ID
+_GEE_KEY: str               = os.getenv("GEE_KEY_FILE", "gee-key.json")
+# Resolve relative path to absolute relative to this config file
+if _GEE_KEY and not os.path.isabs(_GEE_KEY):
+    GEE_KEY_FILE: str = str((BASE_DIR / _GEE_KEY).resolve())
+else:
+    GEE_KEY_FILE: str = _GEE_KEY
+
+GEE_PROJECT_ID: str         = os.getenv("GEE_PROJECT_ID", "fasalsetu-ai")
+GEE_MAX_CLOUD_COVER: int    = int(os.getenv("GEE_MAX_CLOUD_COVER", "80"))
 
 # ── GEE Query Windows (days) ──────────────────────────────────────────────────
 PRE_EVENT_DAYS: int     = int(os.getenv("PRE_EVENT_DAYS", "30"))   # Before claim_date

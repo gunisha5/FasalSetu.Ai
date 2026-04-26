@@ -1,0 +1,47 @@
+{
+  "common": {
+    "home": "Home",
+    "fields": "My Fields",
+    "claims": "Damage Claims",
+    "profile": "My Profile",
+    "logout": "Sign Out",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "next": "Next Step",
+    "back": "Back",
+    "selectLanguage": "ভাষা বাছনি কৰক",
+    "chooseLanguage": "ভাষা বাছনি কৰক",
+    "selectPreferredScript": "আপোনাৰ পছন্দৰ লিপি বাছনি কৰক",
+    "platformName": "ফচলসেতু বহুমুখী এআই প্লেটফৰ্ম"
+  },
+  "farmer": {
+    "dashboard": "Dashboard",
+    "registerField": "Register New Field",
+    "noFields": "No fields registered yet.",
+    "fieldDetails": "Field Details",
+    "fieldName": "Field Name (e.g. North Field)",
+    "village": "Village",
+    "surveyNumber": "Survey / Khasra Number",
+    "area": "Area (Acres)",
+    "cropType": "Crop Type",
+    "soilType": "Soil Type"
+  },
+  "claims": {
+    "status": "Claim Status",
+    "fileNew": "File New Claim",
+    "lossType": "How was it damaged?",
+    "flood": "Flood / Excess Rain",
+    "drought": "Drought / Less Rain",
+    "lossDate": "Date of Loss",
+    "severity": "Damage Severity",
+    "payoutEstimate": "Estimated Help (Payout)",
+    "otpVerif": "OTP Verification"
+  },
+  "ai": {
+    "monitoring": "AI Engine is monitoring this application",
+    "analysis": "AI Satellite Analysis",
+    "confidence": "AI Confidence",
+    "reasoning": "AI Reasoning"
+  }
+}

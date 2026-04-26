@@ -14,7 +14,7 @@ public class AiIntegrationService {
 
     private static final Logger logger = LoggerFactory.getLogger(AiIntegrationService.class);
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final String AI_ENGINE_URL = "http://localhost:8001/analyze";
+    private static final String AI_ENGINE_URL = "http://localhost:8001/predict";
 
     public static class DamageRequest {
         public double latitude;
@@ -24,8 +24,9 @@ public class AiIntegrationService {
         public String crop;
         public String farmer_id;
         public String image_b64;
+        public String lang;
 
-        public DamageRequest(double latitude, double longitude, String claim_date, String district, String crop, String farmer_id, String image_b64) {
+        public DamageRequest(double latitude, double longitude, String claim_date, String district, String crop, String farmer_id, String image_b64, String lang) {
             this.latitude = latitude;
             this.longitude = longitude;
             this.claim_date = claim_date;
@@ -33,24 +34,19 @@ public class AiIntegrationService {
             this.crop = crop;
             this.farmer_id = farmer_id;
             this.image_b64 = image_b64;
+            this.lang = lang;
         }
     }
 
     public static class DamageResponse {
         public String status;
         public double confidence;
-        public double flood_probability;
-        public double drought_probability;
+        public String prediction;
         public String reasoning;
-        public Double delta_ndvi;
-        public Double delta_ndwi;
-        public Double delta_sar;
-        public Double visual_flood_score;
-        public Double visual_drought_score;
-        public Map<String, Object> contributing_factors;
+        public Map<String, Double> features;
     }
 
-    public DamageResponse analyzeDamage(Farm farm, Claim claim) {
+    public DamageResponse analyzeDamage(Farm farm, Claim claim, String lang) {
         try {
             // Extract representative coordinate from GeoJSON
             // For prototype: we look for [lng, lat] pattern in the string
@@ -63,7 +59,8 @@ public class AiIntegrationService {
                 farm.getDistrict(),
                 farm.getPrimaryCrop(),
                 claim.getFarmerId().toString(),
-                null // Placeholder: in a real flow, fetch first evidence b64 here
+                null, // Placeholder: in a real flow, fetch first evidence b64 here
+                lang
             );
 
             logger.info("Calling AI Engine at {} for Farm ID: {}", AI_ENGINE_URL, farm.getId());

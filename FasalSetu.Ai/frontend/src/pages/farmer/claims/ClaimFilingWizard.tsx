@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Camera, UploadCloud, CheckCircle, ShieldAlert, Cpu, Loader2, MapPin, Trash2, FileText, CloudRain, Sun, Wind, Bug, Shrub, AlertTriangle } from 'lucide-react';
 import { claimApi, authApi, farmApi, type Farm } from '../../../utils/apiClient';
 import { useAuthStore } from '../../../store/authStore';
+import { useUIStore } from '../../../store/uiStore';
 import ErrorBanner from '../../../components/ErrorBanner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export default function ClaimFilingWizard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
   const farmerId = Number(user?.id) || 1;
@@ -18,10 +21,10 @@ export default function ClaimFilingWizard() {
     farmId: 0 as number,
     farmLabel: '',
     calamityType: '',
+    dateOfLoss: new Date().toISOString().split('T')[0],
     files: [] as { id: string, name: string; lat?: number; lng?: number, preview?: string }[],
     policies: [] as { name: string; isCovered: boolean; estimate: number; constraints: string[], scanning: boolean }[],
     otp: '',
-    damagePercentage: 50,
     policyDetails: {
       sumInsuredPerAcre: 0,
       totalSumInsured: 0,
@@ -60,7 +63,7 @@ export default function ClaimFilingWizard() {
     setError('');
     try {
       await authApi.sendOtp(user.email, 'CLAIM_SUBMIT');
-      setStep(6);
+      setStep(5);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Failed to send OTP. Please try again.');
     } finally {
@@ -78,7 +81,10 @@ export default function ClaimFilingWizard() {
         farmerId, 
         farmId: formData.farmId, 
         calamityType: formData.calamityType,
-        dateOfLoss: new Date().toISOString().split('T')[0]
+        dateOfLoss: formData.dateOfLoss,
+        sumInsuredPerAcre: formData.policyDetails.sumInsuredPerAcre,
+        totalSumInsured: formData.policyDetails.totalSumInsured,
+        farmAreaSnapshot: farms.find(f => f.id === formData.farmId)?.areaAcres || 0
       });
       navigate('/farmer/claims');
     } catch (err: any) {
@@ -148,9 +154,9 @@ export default function ClaimFilingWizard() {
           <ArrowLeft size={24} strokeWidth={3} />
         </button>
         <div>
-          <h1 className="text-3xl font-black text-brand-900 tracking-tight leading-none">New Claim</h1>
+          <h1 className="text-3xl font-black text-brand-900 tracking-tight leading-none">{t('claimWizard.title')}</h1>
           <div className="flex items-center gap-2 mt-3">
-             {[1, 2, 3, 4, 5, 6].map(s => (
+             {[1, 2, 3, 4, 5].map(s => (
                <div key={s} className={`h-2 rounded-full transition-all duration-500 ${s === step ? 'w-10 bg-brand-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : s < step ? 'w-4 bg-brand-200' : 'w-2 bg-surface-border'}`} />
              ))}
           </div>
@@ -185,13 +191,13 @@ export default function ClaimFilingWizard() {
                     <div className="w-16 h-16 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600">
                       <Shrub size={32} />
                     </div>
-                    <h2 className="text-3xl font-black text-text-main leading-tight">Which field is<br/>affected?</h2>
+                    <h2 className="text-3xl font-black text-text-main leading-tight">{t('claimWizard.step1Title')}</h2>
                   </div>
                   
                   {fetchingFarms ? (
                     <div className="py-20 flex flex-col items-center gap-4">
                       <Loader2 size={48} className="animate-spin text-brand-500" strokeWidth={2.5} />
-                      <p className="text-xs font-black text-brand-400 uppercase tracking-[0.2em]">Locating fields...</p>
+                      <p className="text-xs font-black text-brand-400 uppercase tracking-[0.2em]">{t('claimWizard.locatingFields')}</p>
                     </div>
                   ) : farms.length > 0 ? (
                     <div className="space-y-4">
@@ -216,8 +222,8 @@ export default function ClaimFilingWizard() {
                   ) : (
                     <div className="py-20 text-center space-y-6">
                       <MapPin size={64} className="mx-auto text-brand-100" strokeWidth={1} />
-                      <p className="text-text-secondary font-bold text-lg">No fields registered yet.</p>
-                      <button onClick={() => navigate('/farmer/farms/new')} className="w-full py-5 bg-brand-500 text-white rounded-[1.5rem] font-black text-lg shadow-xl shadow-brand-500/20 active:scale-95 transition-all">Register Field Now</button>
+                      <p className="text-text-secondary font-bold text-lg">{t('farmer.noFields')}</p>
+                      <button onClick={() => navigate('/farmer/farms/new')} className="w-full py-5 bg-brand-500 text-white rounded-[1.5rem] font-black text-lg shadow-xl shadow-brand-500/20 active:scale-95 transition-all">{t('claimWizard.registerFieldNow')}</button>
                     </div>
                   )}
                   
@@ -226,7 +232,7 @@ export default function ClaimFilingWizard() {
                     onClick={() => setStep(2)}
                     className="w-full bg-brand-500 disabled:opacity-30 disabled:bg-surface-border text-white font-black text-xl py-6 rounded-[2rem] shadow-xl shadow-brand-500/30 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
                   >
-                    Next Step <ArrowRight size={24} strokeWidth={3} />
+                    {t('claimWizard.nextStep')} <ArrowRight size={24} strokeWidth={3} />
                   </button>
                 </div>
               )}
@@ -238,7 +244,7 @@ export default function ClaimFilingWizard() {
                     <div className="w-16 h-16 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600">
                       <AlertTriangle size={32} />
                     </div>
-                    <h2 className="text-3xl font-black text-text-main">What happened<br/>to your crop?</h2>
+                    <h2 className="text-3xl font-black text-text-main">{t('claimWizard.step2Title')}</h2>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
@@ -264,90 +270,59 @@ export default function ClaimFilingWizard() {
                       <motion.div 
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
+                        className="space-y-3"
+                      >
+                        <label className="text-xs font-black uppercase tracking-widest text-text-secondary">Date of Loss</label>
+                        <input 
+                          type="date"
+                          max={new Date().toISOString().split('T')[0]}
+                          min={new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                          value={formData.dateOfLoss}
+                          onChange={(e) => setFormData({...formData, dateOfLoss: e.target.value})}
+                          className="w-full p-5 border-2 border-surface-border rounded-2xl focus:border-brand-500 outline-none text-text-main font-bold bg-white transition-all shadow-sm focus:shadow-brand-500/10"
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <AnimatePresence>
+                    {formData.calamityType && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
                         className={`p-6 rounded-[1.5rem] border-2 flex items-start gap-4 ${isAiAssisted ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-lg shadow-indigo-500/10' : 'bg-gray-50 border-gray-200 text-gray-500'}`}
                       >
                         {isAiAssisted ? <Cpu size={28} strokeWidth={2.5} className="shrink-0 animate-pulse text-indigo-500" /> : <ShieldAlert size={28} strokeWidth={2.5} className="shrink-0" />}
                         <p className="text-sm font-black leading-snug">
-                            {isAiAssisted ? "AI SATELLITE ENABLED: We will use space-monitoring to verify your damage within 24 hours." : "MANUAL REVIEW: A human officer will visit/review your case based on photos."}
+                            {isAiAssisted ? t('claimWizard.aiEnabled') : t('claimWizard.manualReview')}
                         </p>
                       </motion.div>
                     )}
                   </AnimatePresence>
 
                   <div className="flex gap-4 mt-6">
-                    <button onClick={() => setStep(1)} className="px-8 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black text-lg active:scale-95 transition-all">Back</button>
+                    <button onClick={() => setStep(1)} className="px-8 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black text-lg active:scale-95 transition-all">{t('common.back')}</button>
                     <button 
                       disabled={!formData.calamityType} 
                       onClick={() => setStep(3)}
                       className="flex-1 bg-brand-500 disabled:opacity-30 disabled:bg-surface-border text-white font-black text-xl py-6 rounded-[2rem] shadow-xl shadow-brand-500/30 flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
                     >
-                      Next Step <ArrowRight size={24} strokeWidth={3} />
+                      {t('claimWizard.nextStep')} <ArrowRight size={24} strokeWidth={3} />
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Step 3: Damage Severity */}
+              {/* Step 3: Photos */}
               {step === 3 && (
-                <div className="space-y-8">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-600">
-                      <AlertTriangle size={32} />
-                    </div>
-                    <h2 className="text-3xl font-black text-text-main leading-tight">Extent of<br/>Damage?</h2>
-                  </div>
-
-                  <div className="bg-surface-bg rounded-[2.5rem] p-10 border-2 border-surface-border text-center space-y-8">
-                    <div className="space-y-2">
-                       <p className="text-6xl font-black text-brand-600 tracking-tighter">{formData.damagePercentage}%</p>
-                       <p className="text-xs font-black text-text-secondary uppercase tracking-[0.2em]">Estimated Field Loss</p>
-                    </div>
-                    
-                    <input 
-                      type="range" 
-                      min="1" 
-                      max="100" 
-                      value={formData.damagePercentage}
-                      onChange={(e) => setFormData({ ...formData, damagePercentage: parseInt(e.target.value) })}
-                      className="w-full h-4 bg-brand-100 rounded-lg appearance-none cursor-pointer accent-brand-500"
-                    />
-
-                    <div className="flex justify-between text-[10px] font-black text-brand-800 uppercase tracking-widest px-2">
-                       <span>Minor</span>
-                       <span>Moderate</span>
-                       <span>Total Loss</span>
-                    </div>
-                  </div>
-
-                  <div className="bg-brand-50 border-2 border-brand-100 p-6 rounded-[1.5rem] flex items-center gap-4">
-                    <Cpu size={24} className="text-brand-500 shrink-0" />
-                    <p className="text-xs font-bold text-brand-800 leading-snug">
-                      AI estimation will be calculated based on this severity. Satellite will verify this claim.
-                    </p>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <button onClick={() => setStep(2)} className="px-8 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black text-lg active:scale-95 transition-all">Back</button>
-                    <button 
-                      onClick={() => setStep(4)}
-                      className="flex-1 bg-brand-500 text-white font-black text-xl py-6 rounded-[2rem] shadow-xl shadow-brand-500/30 flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
-                    >
-                      Confirm Severity <ArrowRight size={24} strokeWidth={3} />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 4: Photos */}
-              {step === 4 && (
                 <div className="space-y-8">
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600">
                       <Camera size={32} />
                     </div>
                     <div>
-                      <h2 className="text-3xl font-black text-text-main leading-none">Photo Evidence</h2>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-brand-500 mt-2">Clear photos help in faster approval</p>
+                      <h2 className="text-3xl font-black text-text-main leading-none">{t('claimWizard.step4Title')}</h2>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-brand-500 mt-2">{t('claimWizard.photoHelp')}</p>
                     </div>
                   </div>
 
@@ -357,7 +332,7 @@ export default function ClaimFilingWizard() {
                         <Camera size={36} strokeWidth={2.5} />
                       </div>
                       <p className="text-[11px] font-black text-brand-700 mt-4 uppercase tracking-[0.2em]">
-                        {loading ? 'Processing...' : 'Take Photo'}
+                        {loading ? t('claimWizard.processing') : t('claimWizard.takePhoto')}
                       </p>
                       <input type="file" accept="image/*" capture="environment" className="hidden"
                         disabled={loading}
@@ -389,32 +364,32 @@ export default function ClaimFilingWizard() {
 
                   <div className="bg-brand-50 border-2 border-brand-100 p-5 rounded-[1.5rem] flex gap-4 items-start">
                     <CheckCircle className="text-brand-600 shrink-0" size={24} strokeWidth={2.5} />
-                    <p className="text-xs font-bold text-brand-800 leading-snug">Photo Uploaded: Your evidence will be analyzed by our AI for damage verification.</p>
+                    <p className="text-xs font-bold text-brand-800 leading-snug">{t('claimWizard.photoUploaded')}</p>
                   </div>
 
                   <div className="flex gap-4">
-                    <button onClick={() => setStep(3)} className="px-8 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black text-lg active:scale-95 transition-all">Back</button>
+                    <button onClick={() => setStep(2)} className="px-8 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black text-lg active:scale-95 transition-all">{t('common.back')}</button>
                     <button 
                       disabled={formData.files.length === 0 || loading} 
-                      onClick={() => setStep(5)}
+                      onClick={() => setStep(4)}
                       className="flex-1 bg-brand-500 disabled:opacity-30 disabled:bg-surface-border text-white font-black text-xl py-6 rounded-[2rem] shadow-xl shadow-brand-500/30 flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
                     >
-                      Continue <ArrowRight size={24} strokeWidth={3} />
+                      {t('claimWizard.continue')} <ArrowRight size={24} strokeWidth={3} />
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Step 5: Policy Analysis */}
-              {step === 5 && (
+              {/* Step 4: Policy Analysis */}
+              {step === 4 && (
                 <div className="space-y-8">
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600">
                       <FileText size={32} />
                     </div>
                     <div>
-                      <h2 className="text-3xl font-black text-text-main leading-none">Insurance Doc</h2>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-brand-500 mt-2">Upload your policy for record keeping</p>
+                      <h2 className="text-3xl font-black text-text-main leading-none">{t('claimWizard.step5Title')}</h2>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-brand-500 mt-2">{t('claimWizard.uploadPolicy')}</p>
                     </div>
                   </div>
 
@@ -422,11 +397,14 @@ export default function ClaimFilingWizard() {
                     <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center text-brand-600 shadow-premium border border-brand-100 mb-4">
                       <UploadCloud size={36} strokeWidth={2.5} />
                     </div>
-                    <p className="text-sm font-black text-brand-700 uppercase tracking-widest">Upload Policy PDF</p>
+                    <p className="text-sm font-black text-brand-700 uppercase tracking-widest">{t('claimWizard.uploadPolicy')}</p>
                     <input type="file" accept="application/pdf" className="hidden"
                       onChange={(e) => {
                           // Smart Policy Scanner Mock
                           const scanSimulation = async () => {
+                             const { startLoading, stopLoading } = useUIStore.getState();
+                             startLoading();
+                             
                              const fileName = e.target.files![0].name;
                              const newPolicy = { 
                                 name: fileName, 
@@ -467,8 +445,8 @@ export default function ClaimFilingWizard() {
                                 const selectedFarm = farms.find(f => f.id === formData.farmId);
                                 const farmerAreaAcres = selectedFarm?.areaAcres || 0;
                                 
-                                // Formula: (Policy Rate per Acre) * (Farmer's Actual Farm Size) * (Self-reported Damage %)
-                                finalEstimate = (ratePerAcre * farmerAreaAcres * formData.damagePercentage) / 100;
+                                // Formula: (Policy Rate per Acre) * (Farmer's Actual Farm Size)
+                                finalEstimate = ratePerAcre * farmerAreaAcres;
                              }
 
                              setFormData(prev => ({
@@ -494,6 +472,7 @@ export default function ClaimFilingWizard() {
                              if (!isCovered) {
                                 setError(alert);
                              }
+                             stopLoading();
                           };
 
                           scanSimulation();
@@ -531,7 +510,7 @@ export default function ClaimFilingWizard() {
                                   <>
                                      <div className="flex items-center justify-between">
                                         <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${p.isCovered ? 'bg-brand-700 text-white' : 'bg-red-600 text-white animate-bounce'}`}>
-                                           {p.isCovered ? 'Coverage Verified' : 'No Coverage Found'}
+                                           {p.isCovered ? t('claimWizard.coverageVerified') : t('claimWizard.noCoverage')}
                                         </span>
                                      </div>
                                      <div className="flex flex-wrap gap-2">
@@ -551,82 +530,59 @@ export default function ClaimFilingWizard() {
                   </div>
 
                   <div className="flex gap-4">
-                    <button onClick={() => setStep(4)} className="px-8 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black text-lg active:scale-95 transition-all">Back</button>
+                    <button onClick={() => setStep(3)} className="px-8 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black text-lg active:scale-95 transition-all">{t('common.back')}</button>
                     <button 
                       disabled={loading || formData.policies.some(p => p.scanning) || formData.policies.length === 0 || formData.policies.some(p => !p.isCovered)} 
                       onClick={handleStep4Submit}
                       className="flex-1 bg-brand-500 disabled:opacity-30 disabled:bg-surface-border text-white font-black text-xl py-6 rounded-[2rem] shadow-xl shadow-brand-500/30 flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
                     >
-                      Authorize <ArrowRight size={24} strokeWidth={3} />
+                      {t('claimWizard.authorize')} <ArrowRight size={24} strokeWidth={3} />
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Step 6: OTP & Final Summary */}
-              {step === 6 && (
+              {/* Step 5: OTP & Final Summary */}
+              {step === 5 && (
                 <div className="space-y-8">
                    <div className="text-center">
                       <div className="w-20 h-20 bg-brand-50 text-brand-700 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-lg shadow-brand-600/10">
                         <CheckCircle size={40} strokeWidth={3} />
                       </div>
-                      <h2 className="text-3xl font-black text-text-main">Nearly Done!</h2>
-                      <p className="text-text-main font-bold mt-2 italic text-sm">Review values carefully before confirming</p>
+                      <h2 className="text-3xl font-black text-text-main">{t('claimWizard.step6Title')}</h2>
+                      <p className="text-text-main font-bold mt-2 italic text-sm">{t('claimWizard.reviewCarefully')}</p>
                    </div>
 
                    <div className="bg-brand-50/50 rounded-[2.5rem] p-8 border-2 border-brand-100 space-y-6">
                       <div className="flex justify-between items-center group">
-                        <span className="text-[11px] text-text-secondary font-black uppercase tracking-widest">Field</span>
+                        <span className="text-[11px] text-text-secondary font-black uppercase tracking-widest">{t('claimWizard.field')}</span>
                         <span className="text-lg font-black text-text-main">{formData.farmLabel}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-[11px] text-text-secondary font-black uppercase tracking-widest">Damage Type</span>
+                        <span className="text-[11px] text-text-secondary font-black uppercase tracking-widest">{t('claimWizard.damageType')}</span>
                         <span className="text-lg font-black text-red-600 bg-red-50 px-4 py-1 rounded-full border border-red-200">{formData.calamityType}</span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-[11px] text-text-secondary font-black uppercase tracking-widest">Damage Extent</span>
-                        <span className="text-lg font-black text-brand-700 bg-brand-50 px-4 py-1 rounded-full border border-brand-200">{formData.damagePercentage}%</span>
-                      </div>
                       
-                      {(() => {
-                          const farmArea = farms.find(f => f.id === formData.farmId)?.areaAcres || 0;
-                          const rate = formData.policyDetails.sumInsuredPerAcre;
-                          const dynamicEstimate = Math.round((rate * farmArea * formData.damagePercentage) / 100);
-                          
-                          return (
-                            <div className="pt-6 border-t border-brand-100 flex justify-between items-end">
-                               <div className="space-y-1">
-                                  <p className="text-[11px] text-text-secondary font-black uppercase tracking-widest">Total Estimated Payout</p>
-                                  <p className="text-5xl font-black text-brand-700">₹{dynamicEstimate.toLocaleString()}</p>
-                               </div>
-                               <div className="bg-white/80 p-4 rounded-2xl border border-brand-200 shadow-sm text-center min-w-[90px]">
-                                  <p className="text-2xl font-black text-text-main">{formData.files.length}</p>
-                                  <p className="text-[10px] text-text-secondary font-black uppercase">Photos</p>
-                               </div>
+                      <div className="pt-6 border-t border-brand-100">
+                         <div className="flex justify-between items-center mb-6">
+                            <div className="bg-brand-100/50 p-4 rounded-2xl border border-brand-200 shadow-sm flex-1 mr-4">
+                               <p className="text-[14px] font-black text-brand-800 uppercase tracking-widest flex items-center gap-2 mb-1">
+                                  <Cpu size={18} className="text-brand-600" /> Pending AI Analysis
+                               </p>
+                               <p className="text-[11px] text-brand-700 font-bold leading-relaxed">
+                                  Final claim payout will be calculated automatically based on satellite data and AI damage assessment after your claim is submitted.
+                               </p>
                             </div>
-                          );
-                       })()}
+                            <div className="bg-white/80 p-4 rounded-2xl border border-brand-200 shadow-sm text-center min-w-[90px]">
+                               <p className="text-2xl font-black text-text-main">{formData.files.length}</p>
+                               <p className="text-[10px] text-text-secondary font-black uppercase">{t('claimWizard.photos')}</p>
+                            </div>
+                         </div>
 
-                      {/* Calculation Logic Breakdown */}
-                      <div className="pt-6 border-t border-brand-100 space-y-4">
-                         <p className="text-[10px] font-black text-brand-800 uppercase tracking-widest flex items-center gap-2">
-                            <Cpu size={14} className="text-brand-500" /> AI Policy Analysis
-                         </p>
                          <div className="grid grid-cols-1 gap-3 text-[12px] text-text-secondary font-medium leading-relaxed">
                             {formData.policyDetails.extractedPoints.map((point, idx) => (
                                <p key={idx} dangerouslySetInnerHTML={{ __html: point }} className="text-brand-900" />
                             ))}
-                            <div className="mt-2 p-4 bg-brand-50/50 rounded-2xl border border-brand-200">
-                               <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest mb-2">Calculation Breakdown</p>
-                               <div className="space-y-1 text-brand-950 font-bold">
-                                  <p>• Rate: ₹{Math.round(formData.policyDetails.sumInsuredPerAcre).toLocaleString()} / Acre</p>
-                                  <p>• Total Farm Area: {(farms.find(f => f.id === formData.farmId)?.areaAcres || 0)} Acres</p>
-                                  <p>• Reported Damage: {formData.damagePercentage}%</p>
-                               </div>
-                               <div className="mt-3 pt-3 border-t border-brand-200 text-[10px] font-medium text-brand-700 italic">
-                                 AI verified: Calculation applied to the total area of the field as per policy guidelines.
-                               </div>
-                            </div>
                          </div>
                       </div>
                    </div>
@@ -634,7 +590,7 @@ export default function ClaimFilingWizard() {
                    <div className="space-y-4">
                       <div className="flex justify-center gap-1.5 opacity-60">
                         <ShieldAlert size={14} className="text-brand-600" />
-                        <p className="text-[10px] font-black text-center text-text-secondary uppercase tracking-[0.2em]">VERIFYING AS {user?.email?.split('@')[0]}***</p>
+                        <p className="text-[10px] font-black text-center text-text-secondary uppercase tracking-[0.2em]">{t('claimWizard.verifyingAs')} {user?.email?.split('@')[0]}***</p>
                       </div>
                       <input type="text" maxLength={6} value={formData.otp}
                           onChange={e => setFormData({ ...formData, otp: e.target.value.replace(/\D/g, '') })}
@@ -643,11 +599,11 @@ export default function ClaimFilingWizard() {
                    </div>
 
                    <div className="flex gap-4">
-                      <button onClick={() => setStep(5)} className="px-8 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black text-lg active:scale-95 transition-all">Back</button>
+                      <button onClick={() => setStep(4)} className="px-8 py-5 rounded-[1.5rem] border-2 border-surface-border text-text-secondary font-black text-lg active:scale-95 transition-all">{t('common.back')}</button>
                       <button disabled={formData.otp.length !== 6 || loading} onClick={submitClaim}
                           className="flex-1 bg-brand-500 disabled:opacity-30 disabled:bg-surface-border text-white font-black text-2xl py-6 rounded-[2.5rem] shadow-xl shadow-brand-500/40 flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
                       >
-                          {loading ? <Loader2 size={32} className="animate-spin" /> : 'Confirm Now'}
+                          {loading ? <Loader2 size={32} className="animate-spin" /> : t('claimWizard.confirmNow')}
                       </button>
                    </div>
                 </div>
@@ -657,10 +613,10 @@ export default function ClaimFilingWizard() {
         </div>
 
         {/* AI Monitoring Badge at Footer */}
-        {isAiAssisted && step < 5 && (
+        {isAiAssisted && step < 4 && (
           <div className="bg-brand-900 p-4 text-center">
              <p className="text-[10px] text-brand-100 font-black uppercase tracking-[0.3em] flex items-center justify-center gap-2">
-                <Cpu size={14} className="animate-pulse" /> AI Engine is Monitoring this application
+                <Cpu size={14} className="animate-pulse" /> {t('claimWizard.aiMonitoring')}
              </p>
           </div>
         )}

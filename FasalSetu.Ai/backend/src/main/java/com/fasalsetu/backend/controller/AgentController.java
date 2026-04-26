@@ -29,40 +29,27 @@ public class AgentController {
     }
 
     /**
-     * POST approve a claim — agent confirms the AI recommendation.
+     * GET claim by ID with full details.
      */
-    @PostMapping("/claims/{id}/approve")
-    public ResponseEntity<?> approveClaim(
-            @PathVariable Long id,
-            @RequestBody Map<String, Object> body) {
-
-        return claimRepository.findById(id).map(claim -> {
-            claim.setStatus("APPROVED");
-            claimRepository.save(claim);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Claim " + claim.getId() + " approved.",
-                "agentNotes", body.getOrDefault("agentNotes", "")
-            ));
-        }).orElse(ResponseEntity.notFound().build());
+    @GetMapping("/claims/{id}")
+    public ResponseEntity<Claim> getClaimById(@PathVariable Long id) {
+        return claimRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
-     * POST reject a claim with mandatory agent notes.
+     * PUT update claim status.
      */
-    @PostMapping("/claims/{id}/reject")
-    public ResponseEntity<?> rejectClaim(
+    @PutMapping("/claims/{id}/status")
+    public ResponseEntity<?> updateClaimStatus(
             @PathVariable Long id,
-            @RequestBody Map<String, Object> body) {
-
+            @RequestBody Map<String, String> body) {
+        String status = body.get("status");
         return claimRepository.findById(id).map(claim -> {
-            claim.setStatus("REJECTED");
+            claim.setStatus(status);
             claimRepository.save(claim);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Claim " + claim.getId() + " rejected.",
-                "agentNotes", body.getOrDefault("agentNotes", "")
-            ));
+            return ResponseEntity.ok(Map.of("message", "Status updated to " + status));
         }).orElse(ResponseEntity.notFound().build());
     }
 

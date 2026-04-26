@@ -22,19 +22,20 @@ export default function Login() {
     try {
       const response = await authApi.login(email, password);
       const responseUser = response.data?.user;
+      const role = responseUser?.role || (isAgent ? 'AGENT' : 'FARMER');
       
       useAuthStore.getState().setAuth(
         {
           id: String(responseUser?.id || '1'),
-          fullName: responseUser?.fullName || responseUser?.name || '',
+          fullName: responseUser?.fullName || '',
           email: responseUser?.email || email,
-          role: (responseUser?.role || (isAgent ? 'AGENT' : 'FARMER')) as 'AGENT' | 'FARMER',
+          role: role as 'AGENT' | 'FARMER',
           isEmailVerified: responseUser?.isEmailVerified ?? true
         },
         response.data?.token || 'mock-token'
       );
       
-      if (isAgent) {
+      if (role === 'AGENT') {
         navigate('/agent/dashboard');
       } else {
         navigate('/farmer/dashboard');

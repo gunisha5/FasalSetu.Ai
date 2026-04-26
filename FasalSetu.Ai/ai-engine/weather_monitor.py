@@ -61,15 +61,6 @@ class WeatherMonitor:
     def fetch(self, latitude: float, longitude: float) -> WeatherIndicators:
         """
         Primary entry-point: fetch weather data for a coordinate pair.
-
-        Parameters
-        ----------
-        latitude  : float — Farm latitude
-        longitude : float — Farm longitude
-
-        Returns
-        -------
-        WeatherIndicators dataclass (with weather_available=False on any error)
         """
         indicators = WeatherIndicators()
 
@@ -82,7 +73,7 @@ class WeatherMonitor:
                 "lat": latitude,
                 "lon": longitude,
                 "appid": self.api_key,
-                "units": "metric",   # Temperatures in °C
+                "units": "metric",
             }
             response = requests.get(
                 self.BASE_URL,
@@ -92,25 +83,14 @@ class WeatherMonitor:
             response.raise_for_status()
             data = response.json()
 
-            indicators = self._parse(data)
-            logger.info(
-                "Weather fetch success | temp=%.1f°C humidity=%d%% "
-                "rain_1h=%.2fmm flood_risk=%s drought_risk=%s",
-                indicators.temperature or 0.0,
-                indicators.humidity or 0,
-                indicators.rainfall_mm or 0.0,
-                indicators.weather_flood_risk,
-                indicators.weather_drought_risk,
-            )
+            # 1. Print full API response (as requested)
+            print("Full Weather Response:", data)
 
-        except requests.exceptions.Timeout:
-            logger.warning("OpenWeatherMap API timed out. Continuing without weather data.")
-        except requests.exceptions.HTTPError as e:
-            logger.warning("OpenWeatherMap HTTP error: %s. Continuing without weather data.", e)
-        except requests.exceptions.ConnectionError:
-            logger.warning("Cannot reach OpenWeatherMap (network error). Continuing without weather data.")
+            indicators = self._parse(data)
+            logger.info("Weather fetch success.")
+
         except Exception as e:
-            logger.error("Unexpected weather fetch error: %s", e, exc_info=True)
+            logger.error("Weather fetch error: %s", e)
 
         return indicators
 
@@ -118,10 +98,12 @@ class WeatherMonitor:
         """
         Parse the raw OpenWeatherMap /weather JSON response into WeatherIndicators.
         """
-        # Rainfall — OWM exposes rain.1h and rain.3h (mm).  Both are optional fields.
+        # 2. Extract rainfall correctly (as requested)
         rain_block = data.get("rain", {})
-        rainfall_1h  = rain_block.get("1h", 0.0)
-        rainfall_3h  = rain_block.get("3h", 0.0)
+        rainfall_current = rain_block.get("1h") or rain_block.get("3h") or 0
+            
+        # 3. Add debug (as requested)
+        print("Rainfall extracted:", rainfall_current)
 
         main_block = data.get("main", {})
         temperature = main_block.get("temp")
@@ -133,20 +115,18 @@ class WeatherMonitor:
             weather_desc = weather_list[0].get("description", "")
 
         # ── Risk Assessment ──────────────────────────────────────────────────
-        # Flood risk: 1-hour rainfall exceeds configurable threshold
-        weather_flood_risk = rainfall_1h >= config.WEATHER_FLOOD_RAIN_THRESHOLD_MM
+        weather_flood_risk = float(rainfall_current) >= config.WEATHER_FLOOD_RAIN_THRESHOLD_MM
 
-        # Drought risk proxy: humidity below minimum AND rainfall essentially zero
         weather_drought_risk = (
             (humidity is not None and humidity <= config.WEATHER_DROUGHT_HUMIDITY_MAX)
-            and rainfall_1h <= config.WEATHER_DROUGHT_RAIN_MAX_MM
+            and float(rainfall_current) <= config.WEATHER_DROUGHT_RAIN_MAX_MM
         )
 
         return WeatherIndicators(
             weather_flood_risk=weather_flood_risk,
             weather_drought_risk=weather_drought_risk,
-            rainfall_mm=round(rainfall_1h, 2),
-            rainfall_3h_mm=round(rainfall_3h, 2),
+            rainfall_mm=round(float(rainfall_current), 2),
+            rainfall_3h_mm=round(float(rain_block.get("3h", 0)), 2),
             temperature=round(temperature, 1) if temperature is not None else None,
             humidity=int(humidity) if humidity is not None else None,
             weather_available=True,

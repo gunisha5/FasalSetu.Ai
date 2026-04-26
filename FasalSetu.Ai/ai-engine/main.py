@@ -27,6 +27,11 @@ from visual_assessment import visual_processor
 import config
 import os
 import pickle
+from fastapi.responses import FileResponse
+from report_generator import report_gen
+from email_service import send_report_email
+from nasa_weather import get_historical_weather
+from district_risk import risk_manager
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -69,6 +74,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/test")
+def test():
+    return {"status": "ok"}
+
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
@@ -84,38 +93,15 @@ class DamageRequest(BaseModel):
     crop:       Optional[str] = Field(None,          description="Primary crop grown (e.g. 'Rice', 'Wheat')")
     farmer_id:  Optional[str] = Field(None,          description="Farmer reference ID for audit traceability")
     image_b64:  Optional[str] = Field(None,          description="Base64 encoded photo evidence for visual AI analysis")
+    lang:       str           = Field("en",          description="Language for the reasoning report (en, hi, pa)")
 
 
 class DamageResponse(BaseModel):
-    """
-    Fully enriched response returned for every analysis request.
-    """
-    # ── Decision ──────────────────────────────────────────────────────────────
-    status:              str            # APPROVED_FLOOD | APPROVED_DROUGHT | NOT_DAMAGED | INCONCLUSIVE
-    confidence:          float          # Final weighted confidence score 0.0–1.0
-    flood_probability:   float          # Combined flood probability 0.0–1.0
-    drought_probability: float          # Combined drought probability 0.0–1.0
-    reasoning:           str            # Human-readable reasoning string
-
-    # ── Satellite Signals ─────────────────────────────────────────────────────
-    delta_ndvi:  Optional[float]
-    delta_ndwi:  Optional[float]
-    delta_sar:   Optional[float]
-
-    # ── Weather Signals ───────────────────────────────────────────────────────
-    weather_available:    bool
-    rainfall_mm:          Optional[float]
-    temperature:          Optional[float]
-    humidity:             Optional[int]
-    weather_flood_risk:   Optional[bool]
-    weather_drought_risk: Optional[bool]
-
-    # ── Ground-Truth ──────────────────────────────────────────────────────────
-    historical_match: Optional[bool]
-
-    # ── Audit ─────────────────────────────────────────────────────────────────
-    contributing_factors: Optional[Dict[str, Any]]
-    farmer_id:            Optional[str]
+    status: str
+    prediction: Optional[str] = None
+    confidence: Optional[float] = None
+    features: Optional[Dict[str, float]] = None
+    message: Optional[str] = None
 
 
 # ── Core Function ─────────────────────────────────────────────────────────────
@@ -127,130 +113,116 @@ def analyze_damage(
     crop:       Optional[str] = None,
     farmer_id:  Optional[str] = None,
     image_b64:  Optional[str] = None,
+    lang:       str = "en",
 ) -> DamageResponse:
-    """
-    Full AI pipeline orchestrator.
-
-    Execution Order
-    ---------------
-    1. Phase 2  — HistoricalValidator (CSV lookup)
-    2. Weather  — WeatherMonitor      (OpenWeatherMap real-time)
-    3. Phase 3  — GEESatelliteCore    (Sentinel-1 SAR + Sentinel-2 NDVI/NDWI)
-    4. Phase 5  — Random Forest       (predict_proba if model loaded)
-    5. Phase 4  — WeightedEngine      (combine all → final decision)
-    """
-    logger.info(
-        "analyze_damage called | district=%s lat=%.4f lon=%.4f date=%s crop=%s",
-        district, latitude, longitude, claim_date, crop or "N/A",
-    )
-
-    # ── Step 1: Historical Validator ──────────────────────────────────────────
-    logger.info("Step 1/5 — Historical CSV validation...")
+    # 1. Core Data Retrieval (Satellite features removed)
     is_historical_flood   = validator_instance.get_historical_match(district, claim_date, crop, "FLOOD")
     is_historical_drought = validator_instance.get_historical_match(district, claim_date, crop, "DROUGHT")
-    logger.info(
-        "Historical result: flood=%s drought=%s",
-        is_historical_flood, is_historical_drought,
-    )
-
-    # ── Step 2: Weather Monitor ───────────────────────────────────────────────
-    logger.info("Step 2/5 — Real-time weather fetch...")
     wx = weather_monitor_instance.fetch(latitude, longitude)
-    if wx.weather_available:
-        logger.info(
-            "Weather: rain=%.2fmm temp=%.1f°C humidity=%d%% "
-            "flood_risk=%s drought_risk=%s",
-            wx.rainfall_mm or 0,
-            wx.temperature or 0,
-            wx.humidity or 0,
-            wx.weather_flood_risk,
-            wx.weather_drought_risk,
-        )
-    else:
-        logger.warning("Weather data unavailable — pipeline continues without it.")
+    
+    # 2. Risk Indicators (Historical & Weather)
+    f_rain   = float(wx.rainfall_mm or 0.0)
+    f_wx_f   = int(getattr(wx, 'weather_flood_risk', 0) or 0)
+    f_wx_d   = int(getattr(wx, 'weather_drought_risk', 0) or 0)
 
-    # ── Step 3: GEE Satellite Core ────────────────────────────────────────────
-    logger.info("Step 3/5 — GEE satellite extraction...")
-    delta_ndvi, delta_ndwi, delta_sar = gee_instance.get_satellite_deltas(
-        latitude, longitude, claim_date
-    )
+    # NASA Historical Weather
+    nasa_wx = get_historical_weather(latitude, longitude, claim_date)
+    f_rain_7d = float(nasa_wx["rainfall_7d"])
+    f_temp_avg = float(nasa_wx["temp_avg"])
+
+    # 3. District Risk Intelligence Integration
+    def get_risk(dist_name: str) -> dict:
+        """Helper to fetch normalized risk from the pre-computed dictionary."""
+        d_key = str(dist_name).lower().strip() if dist_name else ""
+        risk = risk_manager.get_district_risk(d_key)
+        return {
+            "flood_risk": risk.get("flood_risk", 0.5),
+            "drought_risk": risk.get("drought_risk", 0.5)
+        }
+
+    # Fetch Risk
+    risk = get_risk(district)
+    f_hist_f = risk["flood_risk"]
+    f_hist_d = risk["drought_risk"]
+    
+    # Baseline Risk scores for modifiers
+    f_dist_f = f_hist_f
+    f_dist_d = f_hist_d
+
+    # 4. Build Feature Vector
+    # Features: [NDVI, NDWI, SAR, Hist_Flood, Hist_Drought, Rain_Now, Wx_Flood, Wx_Drought]
+    features = [[0.0, 0.0, 0.0, f_hist_f, f_hist_d, f_rain, f_wx_f, f_wx_d]]
+    
+    if ml_model is None:
+        return DamageResponse(status="ERROR", message="Model not loaded")
+
+    # 4. Hybrid Prediction Logic (ML + Rule Engine)
+    # Default to model's statistical prediction
+    probs = ml_model.predict_proba(features)[0]
+    classes = ml_model.classes_
+
+    max_index = probs.argmax()
+    prediction = str(classes[max_index])
+    base_confidence = float(probs[max_index])
+
+    # Rule-Based Overrides (Domain Expertise)
+    # If high cumulative rainfall matches high district vulnerability -> Overwrite to FLOOD
+    if f_rain_7d > 100 and f_dist_f > 0.6:
+        prediction = "FLOOD"
+        logger.info("Rule-based override: FLOOD detected (High Rain + High Risk)")
+    
+    # If low rainfall matches high drought vulnerability -> Overwrite to DROUGHT
+    elif f_rain < 5 and f_dist_d > 0.6:
+        prediction = "DROUGHT"
+        logger.info("Rule-based override: DROUGHT detected (Low Rain + High Risk)")
+
+    # 5. Calibrated Confidence Logic (Fixing Overconfidence)
+    # Formula: confidence = base_confidence * (0.6 + flood_risk * 0.4)
+    confidence = base_confidence * (0.6 + f_dist_f * 0.4)
+
+    # Apply environmental likelihood modifiers (Rainfall / History)
+    likelihood_modifier = 1.0
+    if f_dist_f > 0.6 and f_rain_7d > 100:
+        likelihood_modifier += 0.1
+    elif f_dist_d > 0.6 and f_rain < 5:
+        likelihood_modifier += 0.1
+    
+    # Final combined confidence
+    confidence = confidence * likelihood_modifier
+
+    # 6. Strict Clamping [0.3, 0.9]
+    if confidence > 0.9:
+        confidence = 0.9
+    elif confidence < 0.3:
+        confidence = 0.3
+    
+    confidence = round(float(confidence), 2)
+
+    # 7. Comprehensive Pipeline Logging
     logger.info(
-        "Satellite result: delta_ndvi=%s delta_ndwi=%s delta_sar=%s",
-        delta_ndvi, delta_ndwi, delta_sar,
+        "PIPELINE COMPLETE | District: %s | Prediction: %s | Confidence: %.2f",
+        district, prediction, confidence
+    )
+    logger.debug(
+        "DETAILED FEATURES | Rain_Now: %.2fmm | Rain_7d: %.2fmm | Temp: %.1fC | Flood_Risk: %.2f | Drought_Risk: %.2f",
+        f_rain, f_rain_7d, f_temp_avg, f_dist_f, f_dist_d
     )
 
-    # ── Step 4: ML Random Forest ──────────────────────────────────────────────
-    logger.info("Step 4/5 — ML model inference...")
-    ml_probabilities = None
-    has_satellite = delta_ndvi is not None and delta_ndwi is not None and delta_sar is not None
-
-    if ml_model is not None and has_satellite:
-        features = [[
-            delta_ndvi, delta_ndwi, delta_sar,
-            int(is_historical_flood), int(is_historical_drought),
-            wx.rainfall_mm or 0.0,
-            int(wx.weather_flood_risk or 0),
-            int(wx.weather_drought_risk or 0)
-        ]]
-        raw_probs = ml_model.predict_proba(features)[0]
-        classes   = ml_model.classes_
-        ml_probabilities = {cls: float(prob) for cls, prob in zip(classes, raw_probs)}
-        logger.info("ML probabilities: %s", ml_probabilities)
-    else:
-        logger.info("ML model skipped (no model or missing satellite data).")
-
-    logger.info("Step 4.5 — Visual evidence analysis...")
-    vis_flood, vis_drought = None, None
-    if image_b64:
-        vis_flood, vis_drought = visual_processor.analyze_from_base64(image_b64)
-    else:
-        logger.info("No visual evidence provided — skipping visual layer.")
-
-    # ── Step 5: Weighted Confidence Engine ────────────────────────────────────
-    logger.info("Step 5/5 — Weighted confidence evaluation...")
-    result = evaluate_damage(
-        delta_ndvi=delta_ndvi,
-        delta_ndwi=delta_ndwi,
-        delta_sar=delta_sar,
-        is_historical_flood=is_historical_flood,
-        is_historical_drought=is_historical_drought,
-        weather_flood_risk=wx.weather_flood_risk,
-        weather_drought_risk=wx.weather_drought_risk,
-        rainfall_mm=wx.rainfall_mm,
-        ml_probabilities=ml_probabilities,
-        visual_flood_score=vis_flood,
-        visual_drought_score=vis_drought,
-    )
-
-    logger.info(
-        "Final result | status=%s confidence=%.3f flood=%.3f drought=%.3f",
-        result.status, result.confidence,
-        result.flood_probability, result.drought_probability,
-    )
+    # Final confidence print for backend verification
+    print("Final confidence:", confidence)
 
     return DamageResponse(
-        # Decision
-        status=result.status,
-        confidence=result.confidence,
-        flood_probability=result.flood_probability,
-        drought_probability=result.drought_probability,
-        reasoning=result.reasoning,
-        # Satellite
-        delta_ndvi=delta_ndvi,
-        delta_ndwi=delta_ndwi,
-        delta_sar=delta_sar,
-        # Weather
-        weather_available=wx.weather_available,
-        rainfall_mm=wx.rainfall_mm,
-        temperature=wx.temperature,
-        humidity=wx.humidity,
-        weather_flood_risk=wx.weather_flood_risk,
-        weather_drought_risk=wx.weather_drought_risk,
-        # Ground-Truth
-        historical_match=(is_historical_flood or is_historical_drought),
-        # Audit
-        contributing_factors=result.contributing_factors,
-        farmer_id=farmer_id,
+        status="SUCCESS",
+        prediction=str(prediction),
+        confidence=confidence,
+        features={
+            "historical_flood": f_hist_f,
+            "historical_drought": f_hist_d,
+            "rainfall_current": f_rain,
+            "rainfall_7d": f_rain_7d,
+            "flood_risk": f_dist_f,
+            "drought_risk": f_dist_d
+        }
     )
 
 
@@ -280,7 +252,7 @@ def health():
     return {"status": "ok"}
 
 
-@app.post("/analyze", response_model=DamageResponse, tags=["Analysis"])
+@app.post("/predict", response_model=DamageResponse, tags=["Analysis"])
 def analyze(request: DamageRequest):
     """
     Analyze crop damage for a given farm location and claim date.
@@ -300,11 +272,49 @@ def analyze(request: DamageRequest):
             crop=request.crop,
             farmer_id=request.farmer_id,
             image_b64=request.image_b64,
+            lang=request.lang
         )
         return result
     except Exception as exc:
         logger.error("analyze_damage failed: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=f"AI Engine error: {str(exc)}")
+
+
+@app.get("/download-report/{claim_id}", tags=["Analysis"])
+async def download_report(claim_id: int, farmer_email: Optional[str] = "farmer@example.com"):
+    """
+    Generates a visual PDF report with charts, triggers an email to the farmer,
+    and returns the file for local download.
+    """
+    # 1. Mock/Fetch Data for the report
+    report_data = {
+        "farmer_name": "Rajesh Kumar",
+        "date": date.today().isoformat(),
+        "lat": 20.5937,
+        "lon": 78.9629,
+        "district": "Vidarbha",
+        "prediction": "APPROVED_FLOOD",
+        "confidence": 0.82,
+        "features": {
+            "delta_ndvi": -0.15,
+            "delta_sar": -4.2,
+            "rainfall": 120.5
+        }
+    }
+
+    # 2. Generate PDF locally
+    pdf_path = report_gen.create_pdf(claim_id, report_data)
+
+    # 3. Email Integration
+    if farmer_email:
+        send_report_email(farmer_email, claim_id, pdf_path)
+
+    # 4. Return for Download
+    return FileResponse(
+        path=pdf_path,
+        filename=f"FasalSetu_Report_{claim_id}.pdf",
+        media_type='application/pdf'
+    )
 
 
 # ── Dev Server ────────────────────────────────────────────────────────────────

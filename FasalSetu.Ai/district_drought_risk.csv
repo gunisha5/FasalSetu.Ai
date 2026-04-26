@@ -1,0 +1,312 @@
+district,drought_risk
+24 parganas,0.4942
+adilabad,0.6571
+agra,0.4266
+ahmedabad,0.6036
+ahmednagar,0.6982
+ajmer,0.6425
+akola,0.7814
+alappuzha,0.7074
+aligarh,0.4447
+allahabad,0.5468
+almorah,0.7474
+alwar,0.4868
+amarawati,0.7774
+ambala,0.2663
+amreli,0.5904
+amritsar,0.1994
+ananthapur,0.6458
+aurangabad,0.7912
+azamgarh,0.5404
+bahraich,0.5739
+balaghat,0.74
+balasore,0.6307
+ballia,0.5473
+banaskantha,0.6464
+banda,0.7037
+bangalore,0.6308
+bankura,0.4861
+banswara,0.6945
+barabanki,0.4664
+bareilly,0.4905
+barmer,0.7917
+bastar,0.6959
+basti,0.5495
+beed,0.8187
+belgaum,0.7042
+bellary,0.5099
+betul,0.6971
+bhagalpur,0.609
+bhandara,0.7463
+bharatpur,0.4799
+bharuch,0.7458
+bhatinda,0.0979
+bhavnagar,0.5992
+bhilwara,0.6132
+bhind,0.4974
+bidar,0.7683
+bijapur / vijayapura,0.6782
+bijnor,0.417
+bikaner,0.6764
+bilashpur,0.6859
+bilaspur,0.7283
+birbhum,0.4219
+bolangir,0.6447
+bombay,0.9461
+budaun,0.5081
+buland shahar,0.3787
+buldhana,0.7909
+bundi,0.4812
+burdwan,0.4248
+cachar,0.6624
+chamba,0.6834
+chamoli,0.7111
+champaran,0.6154
+chandrapur,0.7657
+chengalpattu mgr / kanchipuram,0.6171
+chhatarpur,0.7382
+chhindwara,0.6719
+chickmagalur,0.6248
+chitradurga,0.4919
+chittoor,0.6756
+chittorgarh,0.5509
+churu,0.7575
+coimbatore,0.6287
+cooch behar,0.5961
+cuttack,0.6291
+dakshina kannada,0.7285
+damoh,0.7439
+dangs,0.6655
+darbhanga,0.6684
+darjeeling,0.6268
+darrang,0.7041
+datia,0.6613
+dehradun,0.5872
+deoria,0.4915
+dewas,0.693
+dhanbad,0.6983
+dhar,0.7116
+dharwad,0.7756
+dhenkanal,0.6388
+dhule,0.732
+dibrugarh,0.6814
+dungarpur,0.7149
+durg,0.7758
+east godavari,0.6354
+eranakulam,0.7694
+etah,0.48
+etawah,0.4059
+faizabad,0.4629
+farrukhabad,0.426
+fatehpur,0.5162
+ferozpur,0.0989
+ganganagar,0.3423
+ganjam,0.5896
+garhwal,0.7531
+gaya,0.5749
+ghazipur,0.5346
+goalpara,0.6982
+gonda,0.5512
+gorakhpur,0.5052
+gulbarga / kalaburagi,0.6607
+guna,0.7437
+guntur,0.6226
+gurdaspur,0.2389
+gurgaon,0.3153
+gwalior,0.503
+hamirpur,0.6759
+hardoi,0.4898
+hassan,0.6782
+hazaribagh,0.6969
+hissar,0.171
+hooghly,0.4629
+hoshangabad,0.577
+hoshiarpur,0.2512
+howrah,0.5666
+hyderabad,0.6214
+indore,0.696
+jabalpur,0.7368
+jaipur,0.6557
+jaisalmer,0.7788
+jalandhar,0.1097
+jalaun,0.6067
+jalgaon,0.7038
+jalore,0.8232
+jalpaiguri,0.6156
+jamnagar,0.6726
+jaunpur,0.5107
+jhabua,0.7263
+jhalawar,0.5404
+jhansi,0.6758
+jhunjhunu,0.6881
+jind,0.279
+jodhpur,0.7845
+junagadh,0.5118
+kadapa ysr,0.6205
+kalahandi,0.7011
+kamrup,0.7068
+kangra,0.6858
+kannur,0.7673
+kanpur,0.4293
+kanyakumari,0.5535
+kapurthala,0.1402
+karbi anglong,0.6683
+karimnagar,0.5795
+karnal,0.2048
+keonjhar,0.6687
+khammam,0.6989
+khandwa / east nimar,0.6884
+khargone / west nimar,0.6718
+kheda,0.5237
+kheri,0.4647
+kinnaur,0.7123
+kodagu / coorg,0.7052
+kolar,0.6638
+kolhapur,0.4886
+kollam,0.7348
+koraput,0.6547
+kota,0.4743
+kottayam,0.6974
+kozhikode,0.7707
+krishna,0.6441
+kullu,0.654
+kurnool,0.5927
+kutch,0.7013
+lahul & spiti,0.8607
+lakhimpur,0.7321
+lucknow,0.544
+ludhiana,0.0
+madurai,0.5401
+mahabubnagar,0.6684
+mahendragarh / narnaul,0.4196
+mainpuri,0.442
+malappuram,0.7681
+malda,0.4378
+mandi,0.7026
+mandla,0.7972
+mandsaur,0.6671
+mandya,0.6101
+mathura,0.4232
+mayurbhanja,0.643
+medak,0.6233
+meerut,0.3545
+mehsana,0.4733
+midnapur,0.5226
+mirzpur,0.6288
+moradabad,0.4429
+morena,0.4453
+mungair,0.6176
+murshidabad,0.4467
+muzaffarnagar,0.3583
+muzaffarpur,0.6547
+mysore,0.5929
+nadia,0.435
+nagaon,0.6837
+nagaur,0.7766
+nagpur,0.7212
+nainital,0.3258
+nalgonda,0.6521
+nanded,0.7897
+narsinghpur,0.5629
+nasik,0.7071
+nizamabad,0.5597
+north arcot / vellore,0.6177
+north cachar hil / dima hasao,0.6934
+osmanabad,0.833
+palakkad,0.7189
+palamau,0.7621
+pali,0.7633
+panchmahal,0.6875
+panna,0.7783
+parbhani,0.7941
+patiala,0.0789
+patna,0.5449
+phulbani ( kandhamal ),0.6755
+pilibhit,0.3721
+pithorgarh,0.7048
+pratapgarh,0.5443
+pune,0.6595
+puri,0.6679
+purnea,0.6596
+purulia,0.5597
+rae-bareily,0.5455
+raichur,0.5896
+raigad,0.7147
+raigarh,0.7138
+raipur,0.7049
+raisen,0.7055
+rajgarh,0.7279
+rajkot,0.5896
+ramananthapuram,0.7833
+rampur,0.4016
+ranchi,0.7164
+ratlam,0.656
+ratnagiri,0.7082
+rewa,0.7484
+rohtak,0.3462
+roopnagar / ropar,0.1828
+s.p.s. nellore,0.634
+sabarkantha,0.5403
+sagar,0.7881
+saharanpur,0.4322
+saharsa,0.6638
+salem,0.5623
+sambalpur,0.6149
+sangli,0.5845
+sangrur,0.0126
+santhal paragana / dumka,0.6727
+saran,0.6018
+satara,0.612
+satna,0.7407
+sehore,0.6653
+seoni / shivani,0.7389
+shahabad (now part of bhojpur district),0.4914
+shahdol,0.7891
+shahjahanpur,0.3993
+shajapur,0.6891
+shimla,0.735
+shimoge,0.6772
+shivpuri,0.6541
+sibsagar,0.6589
+sidhi,0.7875
+sikar,0.7144
+singhbhum,0.7412
+sirmaur,0.6734
+sirohi,0.6839
+sitapur,0.5556
+solan,0.6355
+solapur,0.7713
+south arcot / cuddalore,0.611
+srikakulam,0.7569
+sultanpur,0.5124
+sundargarh,0.6622
+surat,0.5145
+surendranagar,0.5689
+surguja,0.7486
+swami madhopur,0.5706
+tehri garhwal,0.7003
+thane,0.6839
+thanjavur,0.6667
+the nilgiris,0.6433
+thirunelveli,0.5361
+thiruvananthapuram,0.7508
+thrissur,0.7401
+tikamgarh,0.7036
+tiruchirapalli / trichy,0.5869
+tonk,0.7176
+tumkur,0.6026
+udaipur,0.6481
+ujjain,0.7225
+unnao,0.5608
+uttar kashi,0.6666
+uttara kannada,0.7797
+vadodara / baroda,0.6196
+valsad,0.4515
+varanasi,0.4932
+vidisha,0.7493
+visakhapatnam,0.7886
+warangal,0.6358
+wardha,0.785
+west dinajpur,0.5058
+west godavari,0.6143
+yeotmal,0.7954

@@ -26,7 +26,7 @@ class HistoricalValidator:
         # 1. Load Flood Inventory
         try:
             # Fixing the path based on previous ls output
-            icrisat_path = config.DATA_DIR / "ICRISAT-District Level Data.csv" / "ICRISAT-District Level Data.csv"
+            icrisat_path = r"C:\Users\manya\Downloads\FasalSetu.Ai\FasalSetu.Ai\ICRISAT-District Level Data.csv"
             logger.info(f"Loading ICRISAT dataset from {icrisat_path}...")
             self.icrisat_df = pd.read_csv(icrisat_path)
             self.icrisat_df['Dist Name'] = self.icrisat_df['Dist Name'].str.lower().str.strip()

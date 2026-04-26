@@ -6,8 +6,10 @@ import type { Claim, Farm } from '../../../utils/apiClient';
 import { useAuthStore } from '../../../store/authStore';
 import LoadingSkeleton from '../../../components/LoadingSkeleton';
 import ErrorBanner from '../../../components/ErrorBanner';
+import { useTranslation } from 'react-i18next';
 
 export default function ClaimList() {
+  const { t } = useTranslation();
   const user = useAuthStore(s => s.user);
   const farmerId = Number(user?.id) || 1;
 
@@ -31,9 +33,9 @@ export default function ClaimList() {
       });
       setFarms(farmMap);
     })
-    .catch(() => setError('Could not load claims. Is the backend running?'))
+    .catch(() => setError(t('claims.loadError')))
     .finally(() => setLoading(false));
-  }, [farmerId]);
+  }, [farmerId, t]);
 
   const statusColor = (s?: string) => {
     if (s === 'PROCESSING' || s === 'AI_COMPLETE') return { dot: 'text-orange-400', bg: 'bg-orange-500/20' };
@@ -53,19 +55,23 @@ export default function ClaimList() {
     <div className="space-y-6">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold mb-1">My Claims</h1>
-          <p className="text-gray-400 text-sm">Track your crop damage filings</p>
+          <h1 className="text-2xl font-bold mb-1">{t('claims.myClaims')}</h1>
+          <p className="text-gray-400 text-sm">{t('claims.trackFilings')}</p>
         </div>
         <Link to="/farmer/claims/new" className="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl font-medium flex items-center gap-2 shadow-lg transition-all">
-          <Plus size={18} /> <span className="hidden sm:inline">File Claim</span>
+          <Plus size={18} /> <span className="hidden sm:inline">{t('claims.fileNew')}</span>
         </Link>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {['All', 'Processing', 'Approved'].map(tab => (
-          <button key={tab} onClick={() => setFilter(tab)}
-            className={`px-5 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-colors ${filter === tab ? 'bg-brand-500 text-white' : 'bg-surface-card border border-white/10 text-gray-400 hover:text-white'}`}>
-            {tab}
+        {[
+          { id: 'All', label: t('claims.all') },
+          { id: 'Processing', label: t('claims.processing') },
+          { id: 'Approved', label: t('claims.approved') }
+        ].map(tab => (
+          <button key={tab.id} onClick={() => setFilter(tab.id)}
+            className={`px-5 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-colors ${filter === tab.id ? 'bg-brand-500 text-white' : 'bg-surface-card border border-white/10 text-gray-400 hover:text-white'}`}>
+            {tab.label}
           </button>
         ))}
       </div>
@@ -73,7 +79,7 @@ export default function ClaimList() {
       {error && <ErrorBanner message={error} />}
 
       {loading ? (
-        <LoadingSkeleton rows={3} message="Loading your claims…" />
+        <LoadingSkeleton rows={3} message={t('common.loading')} />
       ) : filtered.length > 0 ? (
         <div className="space-y-4">
           {filtered.map(claim => {
@@ -84,7 +90,7 @@ export default function ClaimList() {
                 <div className={`p-4 rounded-2xl ${c.bg} ${c.dot}`}><ClipboardList size={24} /></div>
                 <div className="flex-1">
                   <h3 className="font-bold text-lg">
-                    {claim.calamityType} Damage 
+                    {claim.calamityType} {t('claims.damage')} 
                     <span className="text-gray-500 font-normal ml-2">• {farms[claim.farmId!] || 'Field #' + claim.farmId}</span>
                   </h3>
                   <p className={`text-sm font-semibold ${c.dot}`}>{claim.status?.replace('_', ' ')}</p>
@@ -97,10 +103,10 @@ export default function ClaimList() {
       ) : (
         <div className="text-center py-20 bg-surface-card rounded-3xl border border-white/5">
           <FileX className="text-gray-600 mx-auto mb-4" size={48} />
-          <h3 className="text-xl font-bold mb-2">No Claims Found</h3>
-          <p className="text-gray-400 mb-6">File a new claim when a calamity strikes.</p>
+          <h3 className="text-xl font-bold mb-2">{t('claims.noClaimsFound')}</h3>
+          <p className="text-gray-400 mb-6">{t('claims.fileNewDescription')}</p>
           <Link to="/farmer/claims/new" className="px-6 py-3 bg-white/10 hover:bg-white/20 inline-flex items-center gap-2 rounded-xl">
-            <Plus size={18} /> File New Claim
+            <Plus size={18} /> {t('claims.fileNew')}
           </Link>
         </div>
       )}

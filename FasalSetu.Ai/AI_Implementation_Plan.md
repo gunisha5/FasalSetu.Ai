@@ -20,7 +20,7 @@ Set up the Python data science and API environment where the AI logic will execu
 ## Phase 2: Historical Ground-Truth Parser (CSV Ingestion)
 Process the existing datasets to provide historical context and rule-based validation for claims.
 
-1.  **Ingest ICRISAT Data:** Write a `pandas` script to parse `ICRISAT-District Level Data.csv` to calculate year-over-year yield drops (Drought Indicators) for a given district.
+1.  **Ingest ICRISAT Data:** Write a `pandas` script to parse `C:\Users\manya\Downloads\FasalSetu.Ai\FasalSetu.Ai\ICRISAT-District Level Data.csv` to calculate year-over-year yield drops (Drought Indicators) for a given district.
 2.  **Ingest Flood Inventory:** Write a `pandas` script to query `India_Flood_Inventory_v3.csv` to verify if a catastrophic flood occurred in the provided district on the given date.
 3.  **Historical Baseline Service:** Create a Python class `HistoricalValidator` that returns a simple boolean or probability score based strictly on these CSV lookups. It must also:
     *   Compute the **"Average" greenness of the whole district** to account for Small Land Holdings (ensuring a crop drop is a regional disaster, not just an isolated pixel mismatch covering multiple farms).

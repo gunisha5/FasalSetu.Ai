@@ -22,9 +22,15 @@ public class ClaimController {
     }
 
     @PostMapping("/file")
-    public ResponseEntity<Claim> fileClaim(@RequestBody Claim claim) {
-        // ClaimService now runs the AI mock pipeline automatically
-        return ResponseEntity.ok(claimService.fileClaim(claim));
+    public ResponseEntity<Claim> fileClaim(@RequestBody Claim claim, @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang) {
+        return ResponseEntity.ok(claimService.fileClaim(claim, lang));
+    }
+
+    @PostMapping("/{id}/analyze")
+    public ResponseEntity<Claim> analyzeClaim(@PathVariable Long id, @RequestParam(required = false) String date, @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang) {
+        Claim updated = claimService.analyzeClaim(id, date, lang);
+        if (updated == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(updated);
     }
 
     @GetMapping("/ai-assess")

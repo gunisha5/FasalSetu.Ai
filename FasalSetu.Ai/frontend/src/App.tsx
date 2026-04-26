@@ -28,12 +28,14 @@ import MapOverview from './pages/agent/MapOverview';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import OfflineBanner from './components/OfflineBanner';
+import LoadingOverlay from './components/LoadingOverlay';
 
 function App() {
   return (
     <div className="min-h-screen bg-surface-dark flex flex-col">
-      {/* Global offline indicator — visible on all screens */}
+      {/* Global items */}
       <OfflineBanner />
+      <LoadingOverlay />
 
       <Routes>
         {/* Public Routes */}

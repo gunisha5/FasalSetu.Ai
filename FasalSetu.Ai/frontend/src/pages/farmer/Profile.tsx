@@ -1,8 +1,10 @@
 import { User, Mail, ShieldCheck, CreditCard, LogOut, Check } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export default function Profile() {
+  const { t } = useTranslation();
   const user = useAuthStore(state => state.user);
   const logout = useAuthStore(state => state.logout);
   const navigate = useNavigate();
@@ -16,14 +18,14 @@ export default function Profile() {
     <div className="space-y-6">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold mb-1">My Profile</h1>
-          <p className="text-gray-400 text-sm">Manage your personal information</p>
+          <h1 className="text-2xl font-bold mb-1">{t('profile.title')}</h1>
+          <p className="text-gray-400 text-sm">{t('profile.subtitle')}</p>
         </div>
         <button 
           onClick={handleLogout}
           className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 px-4 py-2.5 rounded-xl font-medium flex items-center gap-2 shadow-lg transition-all"
         >
-          <LogOut size={18} /> <span className="hidden sm:inline">Sign Out</span>
+          <LogOut size={18} /> <span className="hidden sm:inline">{t('common.logout')}</span>
         </button>
       </div>
 
@@ -36,10 +38,10 @@ export default function Profile() {
             <User size={40} className="text-brand-400" />
           </div>
           <div>
-            <h2 className="text-3xl font-bold">{user?.fullName || 'Registered Farmer'}</h2>
+            <h2 className="text-3xl font-bold">{user?.fullName || t('profile.registeredFarmer')}</h2>
             <div className="flex items-center gap-2 mt-2 text-brand-400 bg-brand-500/10 w-fit px-3 py-1 rounded-full text-sm font-medium border border-brand-500/20">
                <ShieldCheck size={16} />
-               {user?.role === 'FARMER' ? 'Verified Farmer Account' : 'Field Agent'}
+               {user?.role === 'FARMER' ? t('profile.verifiedFarmerAccount') : t('profile.fieldAgent')}
             </div>
           </div>
         </div>
@@ -48,12 +50,12 @@ export default function Profile() {
            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
              <div className="flex items-center gap-3 text-gray-400 mb-2 border-b border-white/10 pb-3">
                <Mail size={18} />
-               <span className="text-sm font-medium">Email Address</span>
+               <span className="text-sm font-medium">{t('profile.emailAddress')}</span>
              </div>
              <p className="text-lg font-semibold mt-3">{user?.email || 'N/A'}</p>
              {user?.isEmailVerified && (
                <p className="text-brand-400 text-xs font-medium mt-1 flex items-center gap-1">
-                 <Check size={12} /> Verified via OTP
+                 <Check size={12} /> {t('profile.verifiedViaOtp')}
                </p>
              )}
            </div>
@@ -61,10 +63,10 @@ export default function Profile() {
            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
              <div className="flex items-center gap-3 text-gray-400 mb-2 border-b border-white/10 pb-3">
                <CreditCard size={18} />
-               <span className="text-sm font-medium">Aadhaar Linked</span>
+               <span className="text-sm font-medium">{t('profile.aadhaarLinked')}</span>
              </div>
              <p className="text-lg font-semibold mt-3">XXXX-XXXX-XXXX</p>
-             <p className="text-gray-500 text-xs font-medium mt-1">Hidden for security</p>
+             <p className="text-gray-500 text-xs font-medium mt-1">{t('profile.hiddenForSecurity')}</p>
            </div>
         </div>
       </div>

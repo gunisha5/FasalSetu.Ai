@@ -80,6 +80,21 @@ public class AuthController {
         if (email == null || password == null) {
             return ResponseEntity.badRequest().body(Map.of("message", "Email and password are required"));
         }
+
+        // Hardcoded Agent Bypass for Prototype
+        if ("agent@fasalsetu.com".equals(email) && "agent123".equals(password)) {
+            return ResponseEntity.ok(Map.of(
+                "message", "Agent login successful", 
+                "token", "agent-jwt-token",
+                "user", Map.of(
+                    "id", 999,
+                    "fullName", "FasalSetu Agent",
+                    "email", "agent@fasalsetu.com",
+                    "role", "AGENT",
+                    "isEmailVerified", true
+                )
+            ));
+        }
         
         Optional<User> userOpt = userRepository.findByEmail(email);
         if (userOpt.isEmpty()) {
@@ -91,14 +106,12 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("message", "Invalid email or password"));
         }
 
-        // Return real user data (A real implementation would return a solid JWT)
         return ResponseEntity.ok(Map.of(
             "message", "Login successful", 
-            "token", "mock-jwt-token-for-dev-only",
+            "token", "mock-jwt-token",
             "user", Map.of(
                 "id", user.getId(),
                 "fullName", user.getFullName(),
-                "name", user.getFullName(),
                 "email", user.getEmail(),
                 "role", user.getRole(),
                 "isEmailVerified", user.isEmailVerified()

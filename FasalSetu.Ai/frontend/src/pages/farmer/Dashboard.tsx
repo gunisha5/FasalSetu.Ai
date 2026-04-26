@@ -4,11 +4,13 @@ import { useAuthStore } from '../../store/authStore';
 import { useEffect, useState } from 'react';
 import { farmApi } from '../../utils/apiClient';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const user = useAuthStore(state => state.user);
   const fullName = user?.fullName || 'Farmer';
-  const firstName = fullName.split(' ')[0]; // Still use first name for the 'Namaste' greeting as it is more natural, but derived ONLY from fullName.
+  const firstName = fullName.split(' ')[0]; 
   const farmerId = Number(user?.id) || 1;
   const [totalArea, setTotalArea] = useState<number>(0);
 
@@ -50,26 +52,26 @@ export default function Dashboard() {
             <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center">
               <Sprout size={20} className="text-white" />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Farmer Dashboard</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">{t('dashboard.title')}</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black mb-3">Namaste, <span className="text-brand-100">{firstName || 'Farmer'}!</span></h1>
-          <p className="text-brand-50 text-lg font-bold max-w-md">Your fields are monitored and secure. Current agricultural outlook is <span className="underline decoration-white/50 decoration-2 underline-offset-4">Healthy</span>.</p>
+          <h1 className="text-4xl md:text-5xl font-black mb-3">{t('dashboard.greeting', { name: firstName })}</h1>
+          <p className="text-brand-50 text-lg font-bold max-w-md">{t('dashboard.outlook')}</p>
         </div>
         <Sprout className="absolute -right-8 -bottom-8 text-white/10 w-64 h-64 -rotate-12 animate-float" strokeWidth={1} />
       </motion.div>
 
-      {/* Quick Actions Grid (For Illiterate Users - BIG ICONS) */}
+      {/* Quick Actions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* File Claim - CRITICAL ACTION */}
+        {/* File Claim */}
         <motion.div variants={item} className="md:col-span-2">
           <Link to="/farmer/claims/new" className="h-full bg-white border-2 border-red-100 hover:border-red-500 p-8 rounded-[2.5rem] flex items-center gap-8 transition-all shadow-premium group relative overflow-hidden active:scale-[0.98]">
              <div className="w-24 h-24 bg-red-50 rounded-[2rem] flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform duration-500">
                <AlertTriangle size={56} strokeWidth={2.5} className="group-hover:rotate-12 transition-transform" />
              </div>
              <div className="flex-1">
-                <p className="font-black text-3xl text-text-main mb-1">File Claim</p>
-                <p className="text-text-secondary font-bold text-sm">Crop damaged? Report now for quick payout.</p>
+                <p className="font-black text-3xl text-text-main mb-1">{t('dashboard.fileClaim')}</p>
+                <p className="text-text-secondary font-bold text-sm">{t('dashboard.reportNow')}</p>
              </div>
              <div className="absolute right-0 top-0 bottom-0 w-2 bg-red-500 transform translate-x-full group-hover:translate-x-0 transition-transform" />
           </Link>
@@ -82,8 +84,8 @@ export default function Dashboard() {
                <PlusCircle size={32} strokeWidth={2.5} />
              </div>
              <div>
-               <p className="font-black text-xl text-text-main">Add Field</p>
-               <p className="text-text-secondary text-xs mt-1 font-bold">Register new land</p>
+               <p className="font-black text-xl text-text-main">{t('dashboard.addField')}</p>
+               <p className="text-text-secondary text-xs mt-1 font-bold">{t('dashboard.registerNew')}</p>
              </div>
           </Link>
         </motion.div>
@@ -97,10 +99,10 @@ export default function Dashboard() {
         <motion.div variants={item} className="bg-white border border-surface-border p-8 rounded-[2.5rem] flex items-center justify-between shadow-premium group">
           <div className="space-y-2">
             <p className="text-text-secondary text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-2">
-              <Map size={14} /> Total Land
+              <Map size={14} /> {t('dashboard.totalLand')}
             </p>
             <p className="text-4xl font-black text-text-main leading-none">
-              {totalArea} <span className="text-lg font-bold text-brand-600 uppercase">Acres</span>
+              {totalArea} <span className="text-lg font-bold text-brand-600 uppercase">{t('dashboard.acres')}</span>
             </p>
           </div>
           <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 group-hover:scale-110 transition-transform">
@@ -112,7 +114,7 @@ export default function Dashboard() {
         <motion.div variants={item} className="bg-white border border-surface-border p-8 rounded-[2.5rem] flex items-center justify-between shadow-premium group">
           <div className="space-y-2">
             <p className="text-text-secondary text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-2">
-              <Wallet size={14} /> My Wallet
+              <Wallet size={14} /> {t('dashboard.myWallet')}
             </p>
             <p className="text-4xl font-black text-text-main leading-none">
               ₹0
@@ -127,7 +129,7 @@ export default function Dashboard() {
         <motion.div variants={item} className="bg-white border border-surface-border p-8 rounded-[2.5rem] flex items-center justify-between shadow-premium group sm:col-span-2 lg:col-span-1">
           <div className="space-y-2">
             <p className="text-text-secondary text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-2">
-              <ClipboardList size={14} /> Active Claims
+              <ClipboardList size={14} /> {t('dashboard.activeClaims')}
             </p>
             <p className="text-4xl font-black text-text-main leading-none">0</p>
           </div>
@@ -137,15 +139,15 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
-      {/* Recent History / Placeholder Flow */}
+      {/* Recent History */}
       <motion.div variants={item} className="bg-white border border-surface-border rounded-[3rem] p-10 shadow-premium relative">
          <div className="flex justify-between items-center mb-10">
             <div>
-              <h2 className="text-2xl font-black text-text-main">Recent Activity</h2>
-              <p className="text-text-secondary text-sm font-bold mt-1">Latest updates on your fields</p>
+              <h2 className="text-2xl font-black text-text-main">{t('dashboard.recentActivity')}</h2>
+              <p className="text-text-secondary text-sm font-bold mt-1">{t('dashboard.latestUpdates')}</p>
             </div>
             <Link to="/farmer/claims" className="bg-brand-50 text-brand-700 px-6 py-3 rounded-2xl text-sm font-black flex items-center gap-2 hover:bg-brand-500 hover:text-white transition-all active:scale-95">
-              History <ArrowRight size={18} strokeWidth={3} />
+              {t('common.history')} <ArrowRight size={18} strokeWidth={3} />
             </Link>
          </div>
          
@@ -157,11 +159,10 @@ export default function Dashboard() {
             >
               <ClipboardList className="text-brand-300" size={48} strokeWidth={1} />
             </motion.div>
-            <h3 className="text-xl font-black text-text-main mb-3">Everything Looks Great!</h3>
-            <p className="text-text-secondary max-w-[280px] text-sm font-bold leading-relaxed">No active alerts. We are monitoring your field using satellite data every 24 hours.</p>
+            <h3 className="text-xl font-black text-text-main mb-3">{t('dashboard.everythingGreat')}</h3>
+            <p className="text-text-secondary max-w-[280px] text-sm font-bold leading-relaxed">{t('dashboard.noAlerts')}</p>
          </div>
       </motion.div>
     </motion.div>
   );
 }
-

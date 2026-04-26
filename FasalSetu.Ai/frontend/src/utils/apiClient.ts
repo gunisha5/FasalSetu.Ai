@@ -64,6 +64,15 @@ export interface Claim {
   dateOfLoss?: string;
   visualFloodScore?: number;
   visualDroughtScore?: number;
+  sumInsuredPerAcre?: number;
+  totalSumInsured?: number;
+  farmAreaSnapshot?: number;
+  estimatedPayout?: number;
+  rainfallMm?: number;
+  rainfall7d?: number;
+  tempAvg?: number;
+  floodRisk?: number;
+  droughtRisk?: number;
 }
 
 export const claimApi = {
@@ -75,9 +84,7 @@ export const claimApi = {
 // ─── Agent ───────────────────────────────────────────────────────────────────
 export const agentApi = {
   getAllClaims: () => api.get<Claim[]>('/agent/claims'),
-  getAiReport:  (id: string) => api.get(`/agent/claims/${id}/ai-report`),
-  approve: (id: string, agentNotes: string) =>
-    api.post(`/agent/claims/${id}/approve`, { agentNotes }),
-  reject: (id: string, agentNotes: string) =>
-    api.post(`/agent/claims/${id}/reject`, { agentNotes }),
+  getById: (id: string) => api.get<Claim>(`/agent/claims/${id}`),
+  updateStatus: (id: string, status: string, agentNotes: string) =>
+    api.put(`/agent/claims/${id}/status`, { status, agentNotes }),
 };

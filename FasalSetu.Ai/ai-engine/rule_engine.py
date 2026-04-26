@@ -103,6 +103,40 @@ def _score_ml(ml_probabilities: Optional[Dict[str, float]]):
 
 # ── Main Engine ───────────────────────────────────────────────────────────────
 
+# Localized reasoning templates
+REASONING_TEMPLATES = {
+    "en": {
+        "hist_flood": "Historical CSV flood record matched.",
+        "hist_drought": "Historical CSV drought record matched.",
+        "weather": "Weather signals: {label} conditions (rain={rain:.1f}mm/h).",
+        "satellite": "Satellite signals: Water levels (NDWI)={ndwi}, Vegetation (NDVI)={ndvi}.",
+        "ml": "AI Model: flood={flood:.0%}, drought={drought:.0%}.",
+        "visual": "Ground Evidence: flood={flood:.1%}, drought={drought:.1%}.",
+        "no_sat": " (Note: Satellite imagery was unavailable; estimates based on weather/history.)",
+        "weighted": "[AI Report] flood={f_prob:.1%}, drought={d_prob:.1%}."
+    },
+    "hi": {
+        "hist_flood": "पुराने बाढ़ के रिकॉर्ड से मिलान हुआ।",
+        "hist_drought": "पुराने सूखे के रिकॉर्ड से मिलान हुआ।",
+        "weather": "मौसम संकेत: {label} की स्थिति (बारिश={rain:.1f}mm/h)।",
+        "satellite": "सैटेलाइट संकेत: जल स्तर (NDWI)={ndwi}, हरियाली (NDVI)={ndvi}।",
+        "ml": "AI मॉडल: बाढ़={flood:.0%}, सूखा={drought:.0%}.",
+        "visual": "खेत के सबूत: बाढ़={flood:.1%}, सूखा={drought:.1%}.",
+        "no_sat": " (नोट: सैटेलाइट चित्र उपलब्ध नहीं थे; केवल मौसम/इतिहास पर आधारित।)",
+        "weighted": "[AI रिपोर्ट] बाढ़={f_prob:.1%}, सूखा={d_prob:.1%}."
+    },
+    "pa": {
+        "hist_flood": "ਪੁਰਾਣੇ ਹੜ੍ਹ ਦੇ ਰਿਕਾਰਡ ਨਾਲ ਮੇਲ ਖਾਂਦਾ ਹੈ।",
+        "hist_drought": "ਪੁਰਾਣੇ ਸੋਕੇ ਦੇ ਰਿਕਾਰਡ ਨਾਲ ਮੇਲ ਖਾਂਦਾ ਹੈ।",
+        "weather": "ਮੌਸਮ ਦੇ ਸੰਕੇਤ: {label} ਦੀ ਸਥਿਤੀ (ਮੀਂਹ={rain:.1f}mm/h)।",
+        "satellite": "ਸੈਟੇਲਾਈਟ ਸੰਕੇਤ: ਪਾਣੀ ਦਾ ਪੱਧਰ (NDWI)={ndwi}, ਹਰਿਆਲੀ (NDVI)={ndvi}।",
+        "ml": "AI ਮਾਡਲ: ਹੜ੍ਹ={flood:.0%}, ਸੋਕਾ={drought:.0%}.",
+        "visual": "ਖੇਤ ਦੇ ਸਬੂਤ: ਹੜ੍ਹ={flood:.1%}, ਸੋਕਾ={drought:.1%}.",
+        "no_sat": " (ਨੋਟ: ਸੈਟੇਲਾਈਟ ਤਸਵੀਰਾਂ ਉਪਲਬਧ ਨਹੀਂ ਸਨ; ਸਿਰਫ ਮੌਸਮ/ਇਤਿਹਾਸ 'ਤੇ ਅਧਾਰਤ।)",
+        "weighted": "[AI ਰਿਪੋਰਟ] ਹੜ੍ਹ={f_prob:.1%}, ਸੋਕਾ={d_prob:.1%}."
+    }
+}
+
 def evaluate_damage(
     delta_ndvi: Optional[float],
     delta_ndwi: Optional[float],
@@ -115,18 +149,11 @@ def evaluate_damage(
     ml_probabilities: Optional[Dict[str, float]] = None,
     visual_flood_score: Optional[float] = None,
     visual_drought_score: Optional[float] = None,
+    lang: str = "en",
 ) -> EvaluationResult:
     """
     Weighted confidence engine combining all four signal layers.
-
-    Weights (configurable via config.py / .env):
-        historical : 20%
-        weather    : 25%
-        satellite  : 35%
-        ml         : 20%
-
-    When a layer has no data, its weight is redistributed proportionally
-    among the remaining available layers.
+    ...
     """
 
     # ── 1. Compute per-layer raw scores ──────────────────────────────────────
@@ -152,7 +179,7 @@ def evaluate_damage(
             confidence=0.0,
             flood_probability=0.0,
             drought_probability=0.0,
-            reasoning="No signal data available from any layer. Manual review required.",
+            reasoning="No signal data available / डेटा उपलब्ध नहीं है।",
             contributing_factors={},
         )
 
@@ -215,32 +242,47 @@ def evaluate_damage(
         },
     }
 
-    # ── 6. Build human-readable reasoning string ─────────────────────────────
+    # ── 6. Build localized reasoning string ──────────────────────────────────
+    t = REASONING_TEMPLATES.get(lang, REASONING_TEMPLATES["en"])
     parts = []
-    if is_historical_flood or is_historical_drought:
-        parts.append(f"Historical CSV {'flood' if is_historical_flood else 'drought'} record matched.")
+    
+    if is_historical_flood: parts.append(t["hist_flood"])
+    elif is_historical_drought: parts.append(t["hist_drought"])
+
     if wx_flood is not None:
-        wx_label = "flood" if weather_flood_risk else ("drought" if weather_drought_risk else "normal")
-        parts.append(f"Weather API: {wx_label} conditions (rain={rainfall_mm:.1f}mm/h).")
+        label = "flood" if weather_flood_risk else ("drought" if weather_drought_risk else "normal")
+        # Translation for nested labels if needed, but keeping it simple
+        parts.append(t["weather"].format(label=label, rain=rainfall_mm or 0))
+
     if sat_flood is not None:
-        parts.append(
-            f"Satellite signals: NDWI Delta={delta_ndwi}, NDVI Delta={delta_ndvi}, SAR Delta={delta_sar}."
-        )
-    if ml_flood is not None:
-        parts.append(f"ML model: flood={ml_flood:.0%}, drought={ml_drought:.0%}.")
+        parts.append(t["satellite"].format(ndwi=delta_ndwi or 0, ndvi=delta_ndvi or 0))
+
+    if ml_probabilities:
+        parts.append(t["ml"].format(flood=ml_probabilities.get("FLOOD", 0), drought=ml_probabilities.get("DROUGHT", 0)))
+
     if visual_flood_score is not None:
-        parts.append(f"Visual Evidence: flood={visual_flood_score:.1%}, drought={visual_drought_score:.1%}.")
+        parts.append(t["visual"].format(flood=visual_flood_score, drought=visual_drought_score or 0))
 
+    reasoning = t["weighted"].format(f_prob=flood_prob, d_prob=drought_prob) + " " + " ".join(parts)
+    
+    if sat_flood is None:
+        reasoning += t["no_sat"]
 
-    reasoning = (
-        f"[Weighted Engine] flood_prob={flood_prob:.1%}, drought_prob={drought_prob:.1%}. "
-        + " ".join(parts)
-    )
-
-    logger.info(
-        "evaluate_damage → status=%s confidence=%.3f flood=%.3f drought=%.3f",
-        status, confidence, flood_prob, drought_prob,
-    )
+    # ── Dynamic Translation API Integration (Suggested) ──────────────────────
+    # To fully support all 13+ languages without hardcoding templates, you can
+    # integrate an external API like Google Translate or 'deep-translator'.
+    # Example using deep-translator (pip install deep-translator):
+    # 
+    # from deep_translator import GoogleTranslator
+    # if lang not in REASONING_TEMPLATES:
+    #     try:
+    #         reasoning = GoogleTranslator(source='en', target=lang).translate(reasoning)
+    #     except Exception as e:
+    #         logger.error(f"Translation API failed for {lang}: {e}")
+    
+    if lang not in REASONING_TEMPLATES and lang != "en":
+        # Fallback for languages not yet in REASONING_TEMPLATES (returns English)
+        logger.warning(f"Language '{lang}' requested but no template found. Falling back to English.")
 
     return EvaluationResult(
         status=status,
