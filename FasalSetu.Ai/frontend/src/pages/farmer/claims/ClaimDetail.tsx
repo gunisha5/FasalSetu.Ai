@@ -84,6 +84,7 @@ export default function ClaimDetail() {
   const damagePercent = claim.damage_percent || 0;
   const estimatedClaim = claim.estimated_claim || 0;
   const explanation = claim.explanation || "Your analysis is complete.";
+  const warning = claim.warning;
   const policySummary = claim.policy_summary || { sum_insured: 0, coverage_used: 0 };
 
   const getStatusColor = (p: string) => {
@@ -116,7 +117,7 @@ export default function ClaimDetail() {
           <span className="text-lg">Back to All Claims</span>
         </button>
         <button 
-          onClick={() => window.open(`http://localhost:8001/download-report/${claim.id}?farmer_email=${user?.email}`, '_blank')}
+          onClick={() => window.open(`http://localhost:8000/download-report/${claim.id}?farmer_email=${user?.email}`, '_blank')}
           className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-800 font-bold text-sm rounded-2xl hover:bg-slate-50 hover:shadow-lg transition-all active:scale-95 shadow-sm"
         >
           <FileText size={18} />
@@ -164,6 +165,19 @@ export default function ClaimDetail() {
               </div>
             </div>
           </div>
+
+          {/* WARNING ALERT */}
+          {warning && (
+            <div className="bg-amber-50 border-2 border-amber-200 p-6 rounded-[2rem] flex items-center gap-5 text-amber-800 animate-pulse-soft shadow-lg shadow-amber-100/50">
+              <div className="w-12 h-12 bg-amber-200/50 rounded-2xl flex items-center justify-center text-amber-600">
+                <AlertCircle size={24} strokeWidth={2.5} />
+              </div>
+              <div>
+                <p className="font-black uppercase tracking-[0.2em] text-[10px] mb-1 text-amber-600">Manual Review Triggered</p>
+                <p className="font-black text-base leading-tight">{warning}</p>
+              </div>
+            </div>
+          )}
 
           {/* 4. EXPLANATION SECTION */}
           <div className="bg-slate-900 text-slate-300 p-10 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-500 relative overflow-hidden group">

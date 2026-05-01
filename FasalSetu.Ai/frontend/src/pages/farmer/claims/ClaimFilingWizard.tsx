@@ -94,6 +94,7 @@ export default function ClaimFilingWizard() {
       }
 
       // 3. Call AI Engine for immediate analysis
+      console.log("Calling AI API...");
       const aiRes = await aiApi.predict(predictData);
       const aiData = aiRes.data;
 

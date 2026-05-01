@@ -2,7 +2,7 @@ import { api } from './api';
 import axios from 'axios';
 
 const aiApiBase = axios.create({
-  baseURL: 'http://localhost:8001',
+  baseURL: 'http://localhost:8000',
 });
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
@@ -88,6 +88,7 @@ export interface Claim {
     coverage_used: number;
   };
   explanation?: string;
+  warning?: string;
 }
 
 export const claimApi = {

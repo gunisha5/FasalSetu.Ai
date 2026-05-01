@@ -1,13 +1,12 @@
 def extract_policy_text(file_path):
     import fitz
-    doc = fitz.open(file_path)
     text = ""
 
-    for page in doc:
-        text += page.get_text()
+    with fitz.open(file_path) as doc:
+        for page in doc:
+            text += page.get_text()
 
     print("Policy Text Preview:", text[:500])
-
     return text
 
 def parse_policy_json(text):

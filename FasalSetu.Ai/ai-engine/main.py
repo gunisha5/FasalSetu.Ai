@@ -108,6 +108,7 @@ class DamageResponse(BaseModel):
     policy_summary: Optional[Dict[str, Any]] = None
     features: Optional[Dict[str, Any]] = None
     message: Optional[str] = None
+    warning: Optional[str] = None
 
 
 # ── Core Function ─────────────────────────────────────────────────────────────
@@ -224,10 +225,25 @@ def analyze_damage(
     # Final confidence print for backend verification
     print("Final confidence:", confidence)
 
+    # 8. Damage Calculation Logic (Rule: Not dependent on confidence)
+    damage_percent = 0.0
+    if prediction == "DROUGHT":
+        damage_percent = f_dist_d * 100
+    elif prediction == "FLOOD":
+        damage_percent = f_dist_f * 100
+    
+    # 9. Low Confidence Warning
+    warning = None
+    if confidence < 0.5:
+        warning = "Low confidence in prediction"
+        logger.warning("Pipeline Result: LOW CONFIDENCE (%.2f)", confidence)
+
     return DamageResponse(
         status="SUCCESS",
         prediction=str(prediction),
         confidence=confidence,
+        damage_percent=round(damage_percent, 2),
+        warning=warning,
         features={
             "historical_flood": f_hist_f,
             "historical_drought": f_hist_d,
@@ -303,19 +319,23 @@ async def analyze(
 
         # 2. Handle Policy Parsing (if PDF provided)
         policy = None
-        damage_percent = 0.0
+        damage_percent = result.damage_percent or 0.0
         claim_amount = 0
         policy_summary = None
         explanation = None
 
         if policy_pdf:
-            # Save temporary file
-            temp_path = f"temp_{policy_pdf.filename}"
-            with open(temp_path, "wb") as buffer:
-                shutil.copyfileobj(policy_pdf.file, buffer)
+            import uuid
+            # Step 5: Use unique filename to avoid locks
+            temp_path = f"temp_{uuid.uuid4()}.pdf"
             
             try:
-                # Extraction
+                # Step 2: Use await read() for UploadFile
+                contents = await policy_pdf.read()
+                with open(temp_path, "wb") as f:
+                    f.write(contents)
+                
+                # Step 1: Extraction (now uses context manager in service)
                 policy_text = extract_policy_text(temp_path)
                 
                 # Parsing
@@ -335,9 +355,13 @@ async def analyze(
                     "coverage_used": policy["coverage"].get(prediction, 0.0)
                 }
             finally:
-                # Cleanup
+                # Step 3 & 4: Safe cleanup
                 if os.path.exists(temp_path):
-                    os.remove(temp_path)
+                    try:
+                        os.remove(temp_path)
+                        print(f"[INFO] Successfully cleaned up {temp_path}")
+                    except Exception as e:
+                        print(f"[WARNING] Failed to remove {temp_path}: {e}")
 
         print("[API RESPONSE CLAIM]", claim_amount)
 
@@ -346,6 +370,7 @@ async def analyze(
             prediction=prediction,
             confidence=confidence,
             damage_percent=round(damage_percent, 2),
+            warning=result.warning,
             estimated_claim=claim_amount,
             explanation=explanation if policy_pdf else None,
             policy_summary=policy_summary,

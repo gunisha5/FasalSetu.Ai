@@ -53,9 +53,10 @@ public class ClaimService {
             
             if (aiResponse != null) {
                 // Update with detailed AI results
-                saved.setStatus("AI_COMPLETE");
+                // Use damage_percent from AI engine (NOT confidence-based)
+                saved.setAiDamageScore(aiResponse.damage_percent != null ? aiResponse.damage_percent : 0.0);
                 saved.setAiConfidence(aiResponse.confidence);
-                saved.setAiReasoning(aiResponse.reasoning);
+                saved.setAiReasoning(aiResponse.explanation);
                 
                 if (aiResponse.features != null) {
                     Map<String, Double> f = aiResponse.features;
@@ -68,15 +69,17 @@ public class ClaimService {
                     saved.setDroughtRisk(f.get("drought_risk"));
                 }
                 
-                // Map status to application status
-                if (aiResponse.confidence > 0.6) {
-                    saved.setAiDamageScore(aiResponse.confidence * 100.0);
-                } else {
-                    saved.setAiDamageScore(0.0);
+                // Set application status based on confidence
+                if (aiResponse.confidence < 0.5) {
                     saved.setStatus("MANUAL_REVIEW");
+                    if (aiResponse.warning != null) {
+                        saved.setAiReasoning(aiResponse.explanation + " [WARNING: " + aiResponse.warning + "]");
+                    }
+                } else {
+                    saved.setStatus("AI_COMPLETE");
                 }
                 
-                // Use the claim value directly from AI engine (No local recalculation)
+                // Use the claim value directly from AI engine
                 saved.setEstimatedPayout(aiResponse.estimated_claim != null ? aiResponse.estimated_claim : 0.0);
             } else {
                 saved.setStatus("AI_ERROR");

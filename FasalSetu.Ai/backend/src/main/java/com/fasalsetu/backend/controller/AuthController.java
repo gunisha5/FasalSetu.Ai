@@ -51,24 +51,18 @@ public class AuthController {
     public ResponseEntity<?> verifyEmail(@RequestBody Map<String, String> request) {
         String email = request.get("email");
         String otp = request.get("otp");
-        String purposeStr = request.get("purpose");
 
-        if (email == null || otp == null || purposeStr == null) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Email, otp, and purpose are required"));
+        // Step 6: Fix DTO mapping / handle nulls
+        if (email == null || otp == null) {
+            return ResponseEntity.badRequest().body(Map.of("status", "FAILED", "message", "Email and otp are required"));
         }
 
         try {
-            OtpPurpose purpose = OtpPurpose.valueOf(purposeStr.toUpperCase());
-            boolean isVerified = otpService.verifyOtp(email, otp, purpose);
-            
-            if (isVerified) {
-                return ResponseEntity.ok(Map.of("message", "OTP verified successfully"));
-                // Here we would typically generate a JWT and return it for LOGIN/REGISTER.
-            } else {
-                return ResponseEntity.status(401).body(Map.of("message", "Invalid or expired OTP"));
-            }
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Invalid OTP purpose"));
+            // Using the new logic that returns ResponseEntity
+            return otpService.verifyOtp(email, otp);
+        } catch (Exception e) {
+            System.err.println("Verification Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("status", "FAILED", "message", "Verification failed"));
         }
     }
 

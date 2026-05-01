@@ -14,7 +14,7 @@ public class AiIntegrationService {
 
     private static final Logger logger = LoggerFactory.getLogger(AiIntegrationService.class);
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final String AI_ENGINE_URL = "http://localhost:8001/predict";
+    private static final String AI_ENGINE_URL = "http://localhost:8000/predict";
 
     public static class DamageRequest {
         public double latitude;
@@ -42,33 +42,45 @@ public class AiIntegrationService {
         public String status;
         public double confidence;
         public String prediction;
-        public String reasoning;
+        public String explanation; // Matches AI engine field
+        public Double damage_percent;
+        public String warning;
         public Map<String, Double> features;
         public Double estimated_claim;
     }
 
     public DamageResponse analyzeDamage(Farm farm, Claim claim, String lang) {
         try {
-            // Extract representative coordinate from GeoJSON
-            // For prototype: we look for [lng, lat] pattern in the string
             double[] coords = extractCoordinates(farm.getBoundaryGeoJson());
             
-            DamageRequest request = new DamageRequest(
-                coords[1], // latitude
-                coords[0], // longitude
-                claim.getDateOfLoss().toString(),
-                farm.getDistrict(),
-                farm.getPrimaryCrop(),
-                claim.getFarmerId().toString(),
-                null, // Placeholder: in a real flow, fetch first evidence b64 here
-                lang
-            );
-
+            // Step C & D: Send as multipart/form-data
+            org.springframework.util.MultiValueMap<String, Object> body = new org.springframework.util.LinkedMultiValueMap<>();
+            body.add("latitude", coords[1]);
+            body.add("longitude", coords[0]);
+            body.add("claim_date", claim.getDateOfLoss().toString());
+            body.add("district", farm.getDistrict());
+            body.add("crop", farm.getPrimaryCrop() != null ? farm.getPrimaryCrop() : "wheat");
+            body.add("farmer_id", claim.getFarmerId().toString());
+            body.add("lang", lang);
+            
+            // Step E: Add debug logs
+            System.out.println("[AI CALL URL] " + AI_ENGINE_URL);
             logger.info("Calling AI Engine at {} for Farm ID: {}", AI_ENGINE_URL, farm.getId());
-            return restTemplate.postForObject(AI_ENGINE_URL, request, DamageResponse.class);
+
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.setContentType(org.springframework.http.MediaType.MULTIPART_FORM_DATA);
+
+            org.springframework.http.HttpEntity<org.springframework.util.MultiValueMap<String, Object>> requestEntity = 
+                new org.springframework.http.HttpEntity<>(body, headers);
+
+            return restTemplate.postForObject(AI_ENGINE_URL, requestEntity, DamageResponse.class);
         } catch (Exception e) {
+            // Step F: Handle failure safely
             logger.error("AI Engine call failed: {}", e.getMessage());
-            return null;
+            DamageResponse errorRes = new DamageResponse();
+            errorRes.status = "FAILED";
+            errorRes.explanation = "AI engine unavailable";
+            return errorRes;
         }
     }
 

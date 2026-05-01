@@ -7,7 +7,7 @@ import java.util.Map;
 @Service
 public class AiService {
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String AI_URL = "http://localhost:8001/predict";
+    private final String AI_URL = "http://localhost:8000/predict";
 
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AiService.class);
 
