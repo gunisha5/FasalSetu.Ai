@@ -14,7 +14,8 @@ public class AiIntegrationService {
 
     private static final Logger logger = LoggerFactory.getLogger(AiIntegrationService.class);
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final String AI_ENGINE_URL = "http://localhost:8000/predict";
+    private static final String AI_ENGINE_URL = "http://localhost:8001/predict";
+
 
     public static class DamageRequest {
         public double latitude;

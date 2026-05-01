@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, Clock, Info, CloudRain, Droplets, Activity, FileText, Loader2, AlertCircle, TrendingUp, Coins, Leaf, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, Info, Activity, FileText, Loader2, AlertCircle, TrendingUp, Coins, Leaf, ShieldCheck, Download } from 'lucide-react';
 import { claimApi, farmApi } from '../../../utils/apiClient';
 import type { Claim } from '../../../utils/apiClient';
 import { useAuthStore } from '../../../store/authStore';
+import { generateClaimReport } from '../../../utils/generateClaimReport';
 
 export default function ClaimDetail() {
   const { id } = useParams();
@@ -16,12 +17,29 @@ export default function ClaimDetail() {
 
   const user = useAuthStore(s => s.user);
   const farmerId = Number(user?.id) || 1;
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [farmDistrict, setFarmDistrict] = useState('');
+  const [farmVillage, setFarmVillage] = useState('');
+  const [farmLatitude, setFarmLatitude] = useState<number | undefined>(undefined);
+  const [farmLongitude, setFarmLongitude] = useState<number | undefined>(undefined);
+  const [cropType, setCropType] = useState('N/A');
 
   useEffect(() => {
     async function load() {
-      // If we already have the claim from state (passed during navigation), skip fetch
       if (claim) {
         setLoading(false);
+        // Still fetch farm details for PDF
+        if (claim.farmId) {
+          try {
+            const fRes = await farmApi.getById(claim.farmId);
+            setFarmName(fRes.data.farmName);
+            setFarmDistrict(fRes.data.district || '');
+            setFarmVillage(fRes.data.village || '');
+            setFarmLatitude(fRes.data.latitude);
+            setFarmLongitude(fRes.data.longitude);
+            setCropType(fRes.data.primaryCrop || 'N/A');
+          } catch { /* ignore */ }
+        }
         return;
       }
 
@@ -35,6 +53,11 @@ export default function ClaimDetail() {
             try {
                const fRes = await farmApi.getById(found.farmId);
                setFarmName(fRes.data.farmName);
+               setFarmDistrict(fRes.data.district || '');
+               setFarmVillage(fRes.data.village || '');
+               setFarmLatitude(fRes.data.latitude);
+               setFarmLongitude(fRes.data.longitude);
+               setCropType(fRes.data.primaryCrop || 'N/A');
             } catch {
                setFarmName(`Field #${found.farmId}`);
             }
@@ -85,6 +108,7 @@ export default function ClaimDetail() {
   const estimatedClaim = claim.estimated_claim || 0;
   const explanation = claim.explanation || "Your analysis is complete.";
   const warning = claim.warning;
+  const confidence = claim.aiConfidence || 0;
   const policySummary = claim.policy_summary || { sum_insured: 0, coverage_used: 0 };
 
   const getStatusColor = (p: string) => {
@@ -117,11 +141,29 @@ export default function ClaimDetail() {
           <span className="text-lg">Back to All Claims</span>
         </button>
         <button 
-          onClick={() => window.open(`http://localhost:8000/download-report/${claim.id}?farmer_email=${user?.email}`, '_blank')}
-          className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-800 font-bold text-sm rounded-2xl hover:bg-slate-50 hover:shadow-lg transition-all active:scale-95 shadow-sm"
+          onClick={async () => {
+            if (!claim || pdfLoading) return;
+            setPdfLoading(true);
+            try {
+              generateClaimReport({
+                claim,
+                farmerName: user?.fullName || user?.email?.split('@')[0] || 'Farmer',
+                farmerEmail: user?.email || '',
+                farmName,
+                farmDistrict,
+                farmVillage,
+                farmLatitude,
+                farmLongitude,
+                cropType,
+              });
+            } finally {
+              setPdfLoading(false);
+            }
+          }}
+          className="flex items-center gap-2 px-6 py-3 bg-slate-900 border border-slate-700 text-white font-bold text-sm rounded-2xl hover:bg-slate-800 hover:shadow-lg transition-all active:scale-95 shadow-sm"
         >
-          <FileText size={18} />
-          Download Report
+          {pdfLoading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+          {pdfLoading ? 'Generating...' : 'Download Report'}
         </button>
       </div>
 
@@ -138,9 +180,17 @@ export default function ClaimDetail() {
                 <Leaf size={14} /> 🌿 Detection Result
               </p>
               <h1 className="text-5xl font-black mb-6 tracking-tight">{prediction}</h1>
-              <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md w-fit px-5 py-2.5 rounded-2xl border border-white/20">
-                <CheckCircle size={18} className="text-white" />
-                <span className="text-sm font-black uppercase tracking-widest">AI Analysis Verified</span>
+              <div className="flex flex-wrap gap-3">
+                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md w-fit px-5 py-2.5 rounded-2xl border border-white/20">
+                  {claim.status === 'MANUAL_REVIEW' ? <Clock size={18} className="text-white" /> : <CheckCircle size={18} className="text-white" />}
+                  <span className="text-sm font-black uppercase tracking-widest">
+                    {claim.status === 'MANUAL_REVIEW' ? 'Pending Agent Review' : 'AI Analysis Verified'}
+                  </span>
+                </div>
+                <div className={`flex items-center gap-2 backdrop-blur-md w-fit px-5 py-2.5 rounded-2xl border ${confidence >= 0.5 ? 'bg-green-500/30 border-green-400/50' : 'bg-red-500/30 border-red-400/50'}`}>
+                  <Activity size={18} className="text-white" />
+                  <span className="text-sm font-black uppercase tracking-widest">Confidence: {Math.round(confidence * 100)}%</span>
+                </div>
               </div>
             </div>
           </div>

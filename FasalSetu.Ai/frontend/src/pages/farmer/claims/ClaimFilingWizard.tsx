@@ -73,7 +73,7 @@ export default function ClaimFilingWizard() {
   };
 
   const submitClaim = async () => {
-    if (!user?.email) return;
+    if (!user?.email || loading) return;
     setLoading(true);
     setError('');
     try {

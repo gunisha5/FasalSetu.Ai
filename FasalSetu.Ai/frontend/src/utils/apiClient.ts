@@ -2,7 +2,7 @@ import { api } from './api';
 import axios from 'axios';
 
 const aiApiBase = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: 'http://localhost:8001',
 });
 
 // ─── Auth ────────────────────────────────────────────────────────────────────

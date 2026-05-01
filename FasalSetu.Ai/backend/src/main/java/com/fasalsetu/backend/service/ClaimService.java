@@ -69,14 +69,10 @@ public class ClaimService {
                     saved.setDroughtRisk(f.get("drought_risk"));
                 }
                 
-                // Set application status based on confidence
-                if (aiResponse.confidence < 0.5) {
-                    saved.setStatus("MANUAL_REVIEW");
-                    if (aiResponse.warning != null) {
-                        saved.setAiReasoning(aiResponse.explanation + " [WARNING: " + aiResponse.warning + "]");
-                    }
-                } else {
-                    saved.setStatus("AI_COMPLETE");
+                // All claims must be reviewed manually as per new security policy
+                saved.setStatus("MANUAL_REVIEW");
+                if (aiResponse.warning != null) {
+                    saved.setAiReasoning(aiResponse.explanation + " [WARNING: " + aiResponse.warning + "]");
                 }
                 
                 // Use the claim value directly from AI engine
