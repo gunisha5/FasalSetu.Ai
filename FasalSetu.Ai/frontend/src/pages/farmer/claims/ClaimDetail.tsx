@@ -35,8 +35,8 @@ export default function ClaimDetail() {
             setFarmName(fRes.data.farmName);
             setFarmDistrict(fRes.data.district || '');
             setFarmVillage(fRes.data.village || '');
-            setFarmLatitude(fRes.data.latitude);
-            setFarmLongitude(fRes.data.longitude);
+            setFarmLatitude(fRes.data.latitude || 23.0225);
+            setFarmLongitude(fRes.data.longitude || 72.5714);
             setCropType(fRes.data.primaryCrop || 'N/A');
           } catch { /* ignore */ }
         }
@@ -55,8 +55,8 @@ export default function ClaimDetail() {
                setFarmName(fRes.data.farmName);
                setFarmDistrict(fRes.data.district || '');
                setFarmVillage(fRes.data.village || '');
-               setFarmLatitude(fRes.data.latitude);
-               setFarmLongitude(fRes.data.longitude);
+               setFarmLatitude(fRes.data.latitude || 23.0225);
+               setFarmLongitude(fRes.data.longitude || 72.5714);
                setCropType(fRes.data.primaryCrop || 'N/A');
             } catch {
                setFarmName(`Field #${found.farmId}`);
@@ -103,13 +103,13 @@ export default function ClaimDetail() {
   );
 
   // Simple Logic for Display
-  const prediction = claim.prediction || 'NORMAL';
-  const damagePercent = claim.damage_percent || 0;
-  const estimatedClaim = claim.estimated_claim || 0;
-  const explanation = claim.explanation || "Your analysis is complete.";
+  const prediction = claim.prediction || claim.calamityType || 'NORMAL';
+  const damagePercent = claim.damage_percent ?? claim.ai_damage_score;
+  const estimatedClaim = claim.estimated_claim ?? claim.estimated_payout;
+  const explanation = claim.explanation || claim.aiReasoning || "Your analysis is complete.";
   const warning = claim.warning;
-  const confidence = claim.aiConfidence || 0;
-  const policySummary = claim.policy_summary || { sum_insured: 0, coverage_used: 0 };
+  const confidence = claim.confidence ?? claim.ai_confidence;
+  const policySummary = claim.policy_summary || { sum_insured: claim.totalSumInsured || 0, coverage_used: claim.coverage_applied || 0 };
 
   const getStatusColor = (p: string) => {
     if (p === 'DROUGHT') return 'from-orange-500 to-orange-600 shadow-orange-200';
@@ -187,9 +187,9 @@ export default function ClaimDetail() {
                     {claim.status === 'MANUAL_REVIEW' ? 'Pending Agent Review' : 'AI Analysis Verified'}
                   </span>
                 </div>
-                <div className={`flex items-center gap-2 backdrop-blur-md w-fit px-5 py-2.5 rounded-2xl border ${confidence >= 0.5 ? 'bg-green-500/30 border-green-400/50' : 'bg-red-500/30 border-red-400/50'}`}>
+                <div className={`flex items-center gap-2 backdrop-blur-md w-fit px-5 py-2.5 rounded-2xl border ${!confidence || confidence >= 0.5 ? 'bg-green-500/30 border-green-400/50' : 'bg-red-500/30 border-red-400/50'}`}>
                   <Activity size={18} className="text-white" />
-                  <span className="text-sm font-black uppercase tracking-widest">Confidence: {Math.round(confidence * 100)}%</span>
+                  <span className="text-sm font-black uppercase tracking-widest">Confidence: {confidence ? `${(confidence * 100).toFixed(0)}%` : "N/A"}</span>
                 </div>
               </div>
             </div>
@@ -204,13 +204,13 @@ export default function ClaimDetail() {
               <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 group-hover:bg-brand-50/30 transition-colors">
                 <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-2">Estimated Damage</p>
                 <p className="text-4xl font-black text-slate-800 flex items-center gap-3">
-                  {damagePercent}% <span className="text-2xl">📊</span>
+                  {damagePercent?.toFixed(2) ?? '0.00'}% <span className="text-2xl">📊</span>
                 </p>
               </div>
               <div className="p-6 bg-brand-50/50 rounded-3xl border border-brand-100 group-hover:bg-brand-50 transition-colors">
                 <p className="text-brand-500 font-black text-[10px] uppercase tracking-widest mb-2">Estimated Claim</p>
                 <p className="text-4xl font-black text-brand-600 flex items-center gap-3">
-                  ₹{estimatedClaim.toLocaleString()} <span className="text-2xl">💰</span>
+                  ₹{estimatedClaim?.toLocaleString() ?? 0} <span className="text-2xl">💰</span>
                 </p>
               </div>
             </div>

@@ -90,12 +90,15 @@ export function generateClaimReport(opts: ReportOptions) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const TOTAL_PAGES = 5;
 
-  const prediction    = claim.prediction || 'UNKNOWN';
-  const confidence    = claim.aiConfidence || 0;
+  const prediction    = claim.prediction || claim.calamityType || 'UNKNOWN';
+  const confidence    = claim.confidence ?? claim.aiConfidence ?? 0;
   const confidencePct = Math.round(confidence * 100);
-  const damagePercent = claim.damage_percent || 0;
-  const estimatedClaim = claim.estimated_claim || 0;
-  const policySummary = claim.policy_summary || { sum_insured: 0, coverage_used: 0 };
+  const damagePercent = claim.damage_percent ?? claim.aiDamageScore ?? 0;
+  const estimatedClaim = claim.estimated_claim ?? claim.estimatedPayout ?? 0;
+  const policySummary = claim.policy_summary || { 
+    sum_insured: claim.totalSumInsured || 0, 
+    coverage_used: claim.coverage_applied || 0 
+  };
   const features: Record<string, number> = (claim as any).features || {};
   const claimDate     = claim.dateOfLoss || new Date().toISOString().split('T')[0];
   const claimId       = claim.id ? `CLM-${String(claim.id).padStart(6, '0')}` : 'CLM-PENDING';

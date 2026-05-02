@@ -52,31 +52,35 @@ public class ClaimService {
             AiIntegrationService.DamageResponse aiResponse = aiIntegrationService.analyzeDamage(farm, saved, lang);
             
             if (aiResponse != null) {
-                // Update with detailed AI results
-                // Use damage_percent from AI engine (NOT confidence-based)
-                saved.setAiDamageScore(aiResponse.damage_percent != null ? aiResponse.damage_percent : 0.0);
-                saved.setAiConfidence(aiResponse.confidence);
-                saved.setAiReasoning(aiResponse.explanation);
-                
-                if (aiResponse.features != null) {
-                    Map<String, Double> f = aiResponse.features;
-                    saved.setDeltaNdvi(f.get("delta_ndvi"));
-                    saved.setDeltaSar(f.get("delta_sar"));
-                    saved.setRainfallMm(f.get("rainfall_current"));
-                    saved.setRainfall7d(f.get("rainfall_7d"));
-                    saved.setTempAvg(f.get("temp_avg"));
-                    saved.setFloodRisk(f.get("flood_risk"));
-                    saved.setDroughtRisk(f.get("drought_risk"));
+                if (aiResponse.estimated_claim == null || aiResponse.estimated_claim == 0.0) {
+                    System.out.println("Skipping invalid AI response");
+                } else {
+                    // Update with detailed AI results
+                    saved.setPrediction(aiResponse.prediction);
+                    saved.setAiConfidence(aiResponse.confidence);
+                    saved.setAiDamageScore(aiResponse.damage_percent != null ? aiResponse.damage_percent : 0.0);
+                    saved.setAiReasoning(aiResponse.explanation);
+                    
+                    if (aiResponse.features != null) {
+                        Map<String, Double> f = aiResponse.features;
+                        saved.setDeltaNdvi(f.get("delta_ndvi"));
+                        saved.setDeltaSar(f.get("delta_sar"));
+                        saved.setRainfallMm(f.get("rainfall_current"));
+                        saved.setRainfall7d(f.get("rainfall_7d"));
+                        saved.setTempAvg(f.get("temp_avg"));
+                        saved.setFloodRisk(f.get("flood_risk"));
+                        saved.setDroughtRisk(f.get("drought_risk"));
+                    }
+                    
+                    // Use the claim value directly from AI engine
+                    saved.setEstimatedPayout(aiResponse.estimated_claim != null ? aiResponse.estimated_claim : 0.0);
                 }
-                
+
                 // All claims must be reviewed manually as per new security policy
                 saved.setStatus("MANUAL_REVIEW");
                 if (aiResponse.warning != null) {
                     saved.setAiReasoning(aiResponse.explanation + " [WARNING: " + aiResponse.warning + "]");
                 }
-                
-                // Use the claim value directly from AI engine
-                saved.setEstimatedPayout(aiResponse.estimated_claim != null ? aiResponse.estimated_claim : 0.0);
             } else {
                 saved.setStatus("AI_ERROR");
                 saved.setAiReasoning("AI Engine was unreachable or returned an error.");
@@ -97,7 +101,16 @@ public class ClaimService {
         return 0.0;
     }
 
+    public boolean deleteClaim(Long id, Long farmerId) {
+        Optional<Claim> claimOpt = claimRepository.findById(id);
+        if (claimOpt.isPresent() && claimOpt.get().getFarmerId().equals(farmerId)) {
+            claimRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+
     public List<Claim> getClaimsForFarmer(Long farmerId) {
-        return claimRepository.findByFarmerId(farmerId);
+        return claimRepository.findByFarmerIdOrderByCreatedAtDesc(farmerId);
     }
 }

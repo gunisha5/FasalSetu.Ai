@@ -105,14 +105,19 @@ export default function ClaimFilingWizard() {
         calamityType: formData.calamityType,
         dateOfLoss: formData.dateOfLoss,
         sumInsuredPerAcre: formData.policyDetails.sumInsuredPerAcre,
-        totalSumInsured: formData.policyDetails.totalSumInsured,
+        totalSumInsured: aiData.policy_summary?.sum_insured || formData.policyDetails.totalSumInsured,
         farmAreaSnapshot: selectedFarm?.areaAcres || 0,
         // Sync AI results
         prediction: aiData.prediction,
+        confidence: aiData.confidence,
         damage_percent: aiData.damage_percent,
         estimated_claim: aiData.estimated_claim,
         explanation: aiData.explanation,
-        policy_summary: aiData.policy_summary
+        coverage_applied: aiData.policy_summary?.coverage_used,
+        rainfallMm: aiData.features?.rainfall_current,
+        rainfall7d: aiData.features?.rainfall_7d,
+        floodRisk: aiData.features?.flood_risk,
+        droughtRisk: aiData.features?.drought_risk
       });
 
       // 5. Navigate to Result Page with immediate data

@@ -1,5 +1,6 @@
 package com.fasalsetu.backend.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,18 +25,28 @@ public class Claim {
     @Column(name = "date_of_loss")
     private LocalDate dateOfLoss;
 
+    @Column(name = "prediction")
+    private String prediction;
+
     @Column(name = "status", nullable = false)
     private String status = "PROCESSING";
 
     // Computed via Satellite AI
     @Column(name = "ai_damage_score")
+    @JsonProperty("damage_percent")
     private Double aiDamageScore;
 
     @Column(name = "ai_confidence")
+    @JsonProperty("confidence")
     private Double aiConfidence;
 
     @Column(name = "ai_reasoning", columnDefinition = "TEXT")
+    @JsonProperty("explanation")
     private String aiReasoning;
+
+    @Column(name = "coverage_applied")
+    @JsonProperty("coverage_applied")
+    private Double coverageApplied;
 
     @Column(name = "delta_ndvi")
     private Double deltaNdvi;
@@ -83,10 +94,17 @@ public class Claim {
     private Double droughtRisk;
 
     @Column(name = "estimated_payout")
+    @JsonProperty("estimated_claim")
     private Double estimatedPayout;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "agent_remark", columnDefinition = "TEXT")
+    private String agentRemark;
 
     public Claim() {}
 
@@ -100,6 +118,8 @@ public class Claim {
     public void setCalamityType(String calamityType) { this.calamityType = calamityType; }
     public LocalDate getDateOfLoss() { return dateOfLoss; }
     public void setDateOfLoss(LocalDate dateOfLoss) { this.dateOfLoss = dateOfLoss; }
+    public String getPrediction() { return prediction; }
+    public void setPrediction(String prediction) { this.prediction = prediction; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public Double getAiDamageScore() { return aiDamageScore; }
@@ -151,4 +171,10 @@ public class Claim {
     public void setEstimatedPayout(Double estimatedPayout) { this.estimatedPayout = estimatedPayout; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public String getAgentRemark() { return agentRemark; }
+    public void setAgentRemark(String agentRemark) { this.agentRemark = agentRemark; }
+    public Double getCoverageApplied() { return coverageApplied; }
+    public void setCoverageApplied(Double coverageApplied) { this.coverageApplied = coverageApplied; }
 }

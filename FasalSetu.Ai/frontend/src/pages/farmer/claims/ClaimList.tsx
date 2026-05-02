@@ -51,6 +51,19 @@ export default function ClaimList() {
         return true;
       });
 
+  const handleDelete = async (e: React.MouseEvent, id: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (window.confirm(t('claims.confirmDelete'))) {
+      try {
+        await claimApi.delete(id, farmerId);
+        setClaims(prev => prev.filter(c => c.id !== id));
+      } catch (err) {
+        setError(t('claims.deleteError'));
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-end">
@@ -86,7 +99,7 @@ export default function ClaimList() {
             const c = statusColor(claim.status);
             return (
               <Link key={claim.id} to={`/farmer/claims/${claim.id}`}
-                className="bg-surface-card border border-white/5 rounded-3xl p-5 shadow-lg flex items-center gap-4 hover:bg-white/10 transition-colors group">
+                className="bg-surface-card border border-white/5 rounded-3xl p-5 shadow-lg flex items-center gap-4 hover:bg-white/10 transition-colors group relative overflow-hidden">
                 <div className={`p-4 rounded-2xl ${c.bg} ${c.dot}`}><ClipboardList size={24} /></div>
                 <div className="flex-1">
                   <h3 className="font-bold text-lg">
@@ -95,7 +108,12 @@ export default function ClaimList() {
                   </h3>
                   <p className={`text-sm font-semibold ${c.dot}`}>{claim.status?.replace('_', ' ')}</p>
                 </div>
-                <ArrowRight size={20} className="text-gray-600 group-hover:text-white transition-colors" />
+                <div className="flex items-center gap-2">
+                  <button onClick={(e) => handleDelete(e, claim.id!)} className="p-3 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100">
+                    <FileX size={20} />
+                  </button>
+                  <ArrowRight size={20} className="text-gray-600 group-hover:text-white transition-colors" />
+                </div>
               </Link>
             );
           })}

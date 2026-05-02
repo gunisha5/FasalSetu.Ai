@@ -324,6 +324,9 @@ async def analyze(
         policy_summary = None
         explanation = None
 
+        if not policy_pdf:
+            return DamageResponse(status="ERROR", message="Policy parsing failed")
+
         if policy_pdf:
             import uuid
             # Step 5: Use unique filename to avoid locks
@@ -344,6 +347,9 @@ async def analyze(
                 # Validation
                 policy = validate_policy_data(policy_raw)
                 
+                if not policy:
+                    return DamageResponse(status="ERROR", message="Policy parsing failed")
+                
                 # Claim Estimation
                 claim_amount = estimate_claim(damage_percent, prediction, policy)
                 
@@ -354,6 +360,9 @@ async def analyze(
                     "sum_insured": policy["sum_insured"],
                     "coverage_used": policy["coverage"].get(prediction, 0.0)
                 }
+            except Exception as e:
+                logger.error(f"Policy parsing error: {e}")
+                return DamageResponse(status="ERROR", message="Policy parsing failed")
             finally:
                 # Step 3 & 4: Safe cleanup
                 if os.path.exists(temp_path):

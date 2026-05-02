@@ -76,7 +76,9 @@
     "lossDate": "Date of Loss",
     "severity": "Damage Severity",
     "payoutEstimate": "Estimated Help (Payout)",
-    "otpVerif": "OTP Verification"
+    "otpVerif": "OTP Verification",
+    "confirmDelete": "Are you sure you want to delete this claim? This action cannot be undone.",
+    "deleteError": "Could not delete claim. Please try again."
   },
   "ai": {
     "monitoring": "AI Engine is monitoring this application",

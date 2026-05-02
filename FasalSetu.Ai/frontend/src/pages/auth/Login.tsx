@@ -36,7 +36,7 @@ export default function Login() {
       );
       
       if (role === 'AGENT') {
-        navigate('/agent/dashboard');
+        navigate('/agent/farmers');
       } else {
         navigate('/farmer/dashboard');
       }

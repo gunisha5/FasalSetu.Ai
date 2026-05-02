@@ -41,4 +41,10 @@ public class ClaimController {
             "result", "damageScore: 74, severity: SEVERE, ndviDrop: 0.89"
         ));
     }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteClaim(@PathVariable Long id, @RequestParam Long farmerId) {
+        boolean deleted = claimService.deleteClaim(id, farmerId);
+        if (deleted) return ResponseEntity.ok(Map.of("message", "Claim deleted successfully"));
+        return ResponseEntity.badRequest().body(Map.of("error", "Unauthorized or claim not found"));
+    }
 }

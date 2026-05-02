@@ -65,10 +65,9 @@ function App() {
         {/* Protected Agent Routes */}
         <Route element={<ProtectedRoute allowedRole="AGENT" />}>
           <Route path="/agent" element={<AgentLayout />}>
-            <Route path="dashboard" element={<AgentDashboard />} />
+            <Route path="farmers" element={<AgentDashboard />} />
             <Route path="claims" element={<ClaimQueue />} />
             <Route path="claims/:id" element={<ClaimReview />} />
-            <Route path="map" element={<MapOverview />} />
           </Route>
         </Route>
 

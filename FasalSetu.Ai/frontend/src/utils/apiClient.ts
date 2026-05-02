@@ -95,6 +95,8 @@ export const claimApi = {
   getAll: (farmerId: number) =>
     api.get<Claim[]>('/farmer/claims', { params: { farmerId } }),
   file: (claim: Claim)   => api.post<Claim>('/farmer/claims/file', claim),
+  delete: (id: number, farmerId: number) =>
+    api.delete(`/farmer/claims/${id}`, { params: { farmerId } }),
 };
 
 // ─── Agent ───────────────────────────────────────────────────────────────────
