@@ -13,7 +13,7 @@ export default function AgentLayout() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-900 font-sans overflow-hidden">
+    <div className="min-h-screen bg-[#ffffff] flex flex-col md:flex-row text-[#222] font-sans overflow-hidden">
       
       {/* Dense Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 border-r border-slate-200 bg-white shadow-xl shadow-slate-200/50">
@@ -60,7 +60,7 @@ export default function AgentLayout() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-y-auto pb-24 md:pb-0 relative bg-slate-50">
+      <main className="flex-1 flex flex-col h-screen overflow-y-auto pb-24 md:pb-0 relative bg-[#ffffff]">
         
         {/* Top bar */}
         <header className="h-16 border-b border-slate-200 bg-white/80 backdrop-blur-md flex justify-between items-center px-6 sticky top-0 z-40">

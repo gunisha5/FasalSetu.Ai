@@ -276,10 +276,15 @@ export function generateClaimReport(opts: ReportOptions) {
   // Auto-generated reasoning text
   y = (doc as any).lastAutoTable.finalY + 10;
   y = sectionTitle(doc, 'AI-Generated Reasoning', y);
-  const reasoning = claim.explanation || claim.aiReasoning ||
-    (prediction === 'DROUGHT'
-      ? `Low rainfall (${rainfallCurr.toFixed(1)}mm current, ${rainfall7d.toFixed(1)}mm over 7 days) combined with a high historical drought vulnerability score of ${(histDrought * 100).toFixed(1)}% strongly indicates drought conditions in this region.`
-      : `Elevated 7-day rainfall of ${rainfall7d.toFixed(1)}mm combined with a high historical flood risk of ${(histFlood * 100).toFixed(1)}% indicates flood conditions in this region.`);
+  const reasoning = (() => {
+    const raw = claim.explanation || claim.aiReasoning || '';
+    const clean = raw.replace(/^null\s*/i, '').trim();
+    return clean || (
+      prediction === 'DROUGHT'
+        ? `Low rainfall (${rainfallCurr.toFixed(1)}mm current, ${rainfall7d.toFixed(1)}mm over 7 days) combined with a high historical drought vulnerability score of ${(histDrought * 100).toFixed(1)}% strongly indicates drought conditions in this region.`
+        : `Elevated 7-day rainfall of ${rainfall7d.toFixed(1)}mm combined with a high historical flood risk of ${(histFlood * 100).toFixed(1)}% indicates flood conditions in this region.`
+    );
+  })();
   const rLines = doc.splitTextToSize(`"${reasoning}"`, CW);
   doc.setFillColor(248, 250, 252);
   doc.roundedRect(ML, y - 2, CW, rLines.length * 5.5 + 8, 2, 2, 'F');
@@ -367,43 +372,91 @@ export function generateClaimReport(opts: ReportOptions) {
 
   y = sectionTitle(doc, 'Process Timeline', y);
 
-  const timelineSteps = [
-    { label: 'Claim Submitted',          done: true },
-    { label: 'AI Analysis Completed',    done: true },
-    { label: 'Damage Assessed',          done: true },
-    { label: 'Claim Estimated',          done: true },
-    { label: 'Sent to Insurance Provider', done: false },
-    { label: 'Approval Pending',          done: false },
+  // ── Dynamic timeline driven by claim.status ─────────────────────────────
+  const claimStatus  = claim.status || 'PENDING';
+  const tlApproved   = claimStatus === 'APPROVED';
+  const tlRejected   = claimStatus === 'REJECTED';
+  const tlInReview   = claimStatus === 'IN_REVIEW' || claimStatus === 'MANUAL_REVIEW';
+  const tlHasAI      = !!(claim.prediction || claim.damage_percent || claim.aiDamageScore);
+  const tlHasDamage  = (claim.damage_percent ?? claim.aiDamageScore) != null;
+  const tlHasClaim   = (claim.estimated_claim ?? claim.estimatedPayout) != null;
+
+  const timelineSteps: { label: string; done: boolean; current: boolean; tag: string; tagColor: [number,number,number] }[] = [
+    {
+      label:    'Claim Submitted',
+      done:     true,
+      current:  false,
+      tag:      'COMPLETED',
+      tagColor: BRAND_GREEN,
+    },
+    {
+      label:    'AI Analysis Completed',
+      done:     tlHasAI,
+      current:  !tlHasAI,
+      tag:      tlHasAI ? 'COMPLETED' : 'IN PROGRESS',
+      tagColor: tlHasAI ? BRAND_GREEN : BRAND_BLUE,
+    },
+    {
+      label:    'Damage Assessed',
+      done:     tlHasDamage,
+      current:  tlHasAI && !tlHasDamage,
+      tag:      tlHasDamage ? 'COMPLETED' : (tlHasAI ? 'IN PROGRESS' : 'PENDING'),
+      tagColor: tlHasDamage ? BRAND_GREEN : (tlHasAI ? BRAND_BLUE : [150, 150, 150] as [number,number,number]),
+    },
+    {
+      label:    'Claim Estimated',
+      done:     tlHasClaim,
+      current:  tlHasDamage && !tlHasClaim,
+      tag:      tlHasClaim ? 'COMPLETED' : (tlHasDamage ? 'IN PROGRESS' : 'PENDING'),
+      tagColor: tlHasClaim ? BRAND_GREEN : (tlHasDamage ? BRAND_BLUE : [150, 150, 150] as [number,number,number]),
+    },
+    {
+      label:    tlRejected ? 'Claim Rejected' : tlApproved ? 'Claim Approved' : 'Agent Review',
+      done:     tlApproved || tlRejected,
+      current:  tlInReview && tlHasClaim,
+      tag:      tlRejected ? 'REJECTED' : tlApproved ? 'COMPLETED' : (tlInReview ? 'IN PROGRESS' : 'PENDING'),
+      tagColor: tlRejected ? [220, 38, 38] as [number,number,number] : tlApproved ? BRAND_GREEN : (tlInReview ? BRAND_BLUE : [150, 150, 150] as [number,number,number]),
+    },
+    {
+      label:    tlApproved ? 'Payout Processed' : 'Approval Pending',
+      done:     tlApproved,
+      current:  false,
+      tag:      tlApproved ? 'COMPLETED' : 'PENDING',
+      tagColor: tlApproved ? BRAND_GREEN : [150, 150, 150] as [number,number,number],
+    },
   ];
 
   timelineSteps.forEach((step, i) => {
     const circleX = ML + 6;
     const stepY   = y + i * 14;
+    const fillCol: [number,number,number] = step.done
+      ? (step.label.includes('Rejected') ? [220, 38, 38] : BRAND_GREEN)
+      : step.current ? BRAND_BLUE
+      : [200, 200, 200];
 
     // Connector line
     if (i < timelineSteps.length - 1) {
-      doc.setDrawColor(step.done ? BRAND_GREEN[0] : 200, step.done ? BRAND_GREEN[1] : 200, step.done ? BRAND_GREEN[2] : 200);
+      doc.setDrawColor(step.done ? fillCol[0] : 200, step.done ? fillCol[1] : 200, step.done ? fillCol[2] : 200);
       doc.setLineWidth(0.6);
       doc.line(circleX, stepY + 5, circleX, stepY + 13);
     }
 
     // Circle
-    doc.setFillColor(...(step.done ? BRAND_GREEN : [200, 200, 200] as [number,number,number]));
+    doc.setFillColor(...fillCol);
     doc.circle(circleX, stepY + 1.5, 3, 'F');
 
-    // Checkmark or dot text
+    // Checkmark / dot
     setFont(doc, 7, 'bold', WHITE);
-    doc.text(step.done ? '✓' : '○', circleX, stepY + 3.5, { align: 'center' });
+    doc.text(step.done ? '\u2713' : (step.current ? '○' : '•'), circleX, stepY + 3.5, { align: 'center' });
 
     // Label
-    setFont(doc, 10, step.done ? 'bold' : 'normal', step.done ? SLATE_900 : SLATE_600);
+    setFont(doc, 10, step.done || step.current ? 'bold' : 'normal',
+      step.done ? SLATE_900 : step.current ? SLATE_900 : SLATE_600);
     doc.text(step.label, circleX + 8, stepY + 3.5);
 
-    // Status tag
-    const tag = step.done ? 'COMPLETED' : 'PENDING';
-    const tagColor: [number,number,number] = step.done ? BRAND_GREEN : [150, 150, 150];
-    setFont(doc, 7, 'bold', tagColor);
-    doc.text(tag, PAGE_W - MR, stepY + 3.5, { align: 'right' });
+    // Status tag (right-aligned)
+    setFont(doc, 7, 'bold', step.tagColor);
+    doc.text(step.tag, PAGE_W - MR, stepY + 3.5, { align: 'right' });
   });
 
   y += timelineSteps.length * 14 + 12;

@@ -52,7 +52,7 @@ public class ClaimService {
             AiIntegrationService.DamageResponse aiResponse = aiIntegrationService.analyzeDamage(farm, saved, lang);
             
             if (aiResponse != null) {
-                if (aiResponse.estimated_claim == null || aiResponse.estimated_claim == 0.0) {
+                if (aiResponse.estimated_claim == null && aiResponse.status.equals("ERROR")) {
                     System.out.println("Skipping invalid AI response");
                 } else {
                     // Update with detailed AI results

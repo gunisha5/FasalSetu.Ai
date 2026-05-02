@@ -65,10 +65,11 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
-            message.setSubject("FasalSetu Claim Status Update — " + claimRef);
+            message.setSubject("Claim Status Updated");
             message.setText(
                 "Dear Farmer,\n\n" +
-                "Your crop insurance claim " + claimRef + " has been updated.\n\n" +
+                "Your crop insurance claim status has been updated.\n\n" +
+                "Claim ID: " + claimRef + "\n" +
                 "New Status: " + statusLabel + "\n\n" +
                 (agentRemark != null && !agentRemark.isBlank()
                     ? "Agent Remarks: " + agentRemark + "\n\n"

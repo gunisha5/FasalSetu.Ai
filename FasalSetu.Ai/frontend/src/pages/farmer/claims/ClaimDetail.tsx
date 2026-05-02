@@ -106,7 +106,9 @@ export default function ClaimDetail() {
   const prediction = claim.prediction || claim.calamityType || 'NORMAL';
   const damagePercent = claim.damage_percent ?? claim.ai_damage_score;
   const estimatedClaim = claim.estimated_claim ?? claim.estimated_payout;
-  const explanation = claim.explanation || claim.aiReasoning || "Your analysis is complete.";
+  // Fix: sanitize "null [WARNING...]" stored strings from older claims
+  const rawExplanation = claim.explanation || claim.aiReasoning || '';
+  const explanation = rawExplanation.replace(/^null\s*/i, '').trim() || 'Your analysis is complete.';
   const warning = claim.warning;
   const confidence = claim.confidence ?? claim.ai_confidence;
   const policySummary = claim.policy_summary || { sum_insured: claim.totalSumInsured || 0, coverage_used: claim.coverage_applied || 0 };
@@ -117,13 +119,46 @@ export default function ClaimDetail() {
     return 'from-green-500 to-green-600 shadow-green-200';
   };
 
+  // ─── Dynamic Timeline based on actual claim status ───────────────────────────
+  const claimStatus = claim.status || 'PENDING';
+  const isApproved  = claimStatus === 'APPROVED';
+  const isRejected  = claimStatus === 'REJECTED';
+  const isInReview  = claimStatus === 'IN_REVIEW' || claimStatus === 'MANUAL_REVIEW';
+  const hasAI       = !!(claim.prediction || claim.ai_damage_score || claim.aiDamageScore);
+  const hasDamage   = (claim.damage_percent ?? claim.ai_damage_score) != null;
+  const hasClaim    = (claim.estimated_claim ?? claim.estimated_payout ?? claim.estimatedPayout) != null;
+
   const timelineSteps = [
-    "Claim Submitted",
-    "AI Analysis Completed",
-    "Damage Assessed",
-    "Claim Estimated",
-    "Sent to Insurance Provider",
-    "Approval Pending"
+    {
+      label: 'Claim Submitted',
+      done:  true,
+      current: false,
+    },
+    {
+      label: 'AI Analysis Completed',
+      done:  hasAI,
+      current: !hasAI,
+    },
+    {
+      label: 'Damage Assessed',
+      done:  hasDamage,
+      current: hasAI && !hasDamage,
+    },
+    {
+      label: 'Claim Estimated',
+      done:  hasClaim,
+      current: hasDamage && !hasClaim,
+    },
+    {
+      label: isRejected ? 'Claim Rejected' : isApproved ? 'Claim Approved' : 'Agent Review',
+      done:  isApproved || isRejected,
+      current: isInReview && hasClaim,
+    },
+    {
+      label: isApproved ? 'Payout Processed' : 'Approval Pending',
+      done:  isApproved,
+      current: false,
+    },
   ];
 
   return (
@@ -279,32 +314,43 @@ export default function ClaimDetail() {
           <div className="bg-white p-10 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-500 border border-slate-100 sticky top-10">
             <h3 className="text-slate-800 font-black uppercase tracking-[0.2em] text-[10px] mb-10">Process Timeline</h3>
             <div className="space-y-10">
-              {timelineSteps.map((stepName, idx) => {
-                const isCompleted = idx < 4;
-                const isCurrent = idx === 4;
-                
+              {timelineSteps.map((step, idx) => {
+                const rejectedStep = isRejected && idx === 4;
                 return (
                   <div key={idx} className="flex gap-5 relative group/item">
-                    {/* Line */}
+                    {/* Connector line */}
                     {idx !== timelineSteps.length - 1 && (
-                      <div className={`absolute left-[15px] top-8 bottom-0 w-[2px] -mb-10 ${isCompleted ? 'bg-brand-500' : 'bg-slate-100'}`} />
+                      <div className={`absolute left-[15px] top-8 bottom-0 w-[2px] -mb-10 ${
+                        step.done ? (rejectedStep ? 'bg-red-400' : 'bg-brand-500') : 'bg-slate-100'
+                      }`} />
                     )}
-                    
+
                     {/* Dot */}
                     <div className={`z-10 w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
-                      isCompleted ? 'bg-brand-500 text-white shadow-lg shadow-brand-200' : 
-                      isCurrent ? 'bg-white border-4 border-brand-500 text-brand-500 animate-pulse-soft scale-110' : 
-                      'bg-white border-2 border-slate-100 text-slate-200 group-hover/item:border-slate-200'
+                      rejectedStep    ? 'bg-red-500 text-white shadow-lg shadow-red-200' :
+                      step.done       ? 'bg-brand-500 text-white shadow-lg shadow-brand-200' :
+                      step.current    ? 'bg-white border-4 border-brand-500 text-brand-500 animate-pulse-soft scale-110' :
+                      'bg-white border-2 border-slate-100 text-slate-200'
                     }`}>
-                      {isCompleted ? <CheckCircle size={16} strokeWidth={3} /> : <div className="w-1.5 h-1.5 rounded-full bg-current" />}
+                      {step.done
+                        ? <CheckCircle size={16} strokeWidth={3} />
+                        : <div className="w-1.5 h-1.5 rounded-full bg-current" />}
                     </div>
 
                     <div className="pt-0.5">
-                      <p className={`text-sm font-black transition-colors ${isCompleted ? 'text-slate-800' : isCurrent ? 'text-brand-600' : 'text-slate-300'}`}>
-                        {stepName}
+                      <p className={`text-sm font-black transition-colors ${
+                        rejectedStep ? 'text-red-600' :
+                        step.done    ? 'text-slate-800' :
+                        step.current ? 'text-brand-600' : 'text-slate-300'
+                      }`}>
+                        {step.label}
                       </p>
-                      <p className={`text-[9px] font-black uppercase tracking-widest mt-1 transition-colors ${isCompleted ? 'text-brand-500' : 'text-slate-300'}`}>
-                        {isCompleted ? 'Completed' : isCurrent ? 'In Progress' : 'Pending'}
+                      <p className={`text-[9px] font-black uppercase tracking-widest mt-1 ${
+                        rejectedStep ? 'text-red-400' :
+                        step.done    ? 'text-brand-500' :
+                        step.current ? 'text-brand-400' : 'text-slate-300'
+                      }`}>
+                        {rejectedStep ? 'Rejected' : step.done ? 'Completed' : step.current ? 'In Progress' : 'Pending'}
                       </p>
                     </div>
                   </div>

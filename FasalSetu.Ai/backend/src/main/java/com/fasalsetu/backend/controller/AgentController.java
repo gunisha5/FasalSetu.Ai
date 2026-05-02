@@ -32,37 +32,89 @@ public class AgentController {
         List<Claim> claims = claimRepository.findAllByOrderByCreatedAtDesc();
         List<Map<String, Object>> enriched = claims.stream().map(c -> {
             Map<String, Object> m = new LinkedHashMap<>();
-            m.put("id",             c.getId());
-            m.put("claimId",        c.getId());
-            m.put("prediction",     c.getPrediction());
-            m.put("confidence",     c.getAiConfidence());
-            m.put("damagePercent",  c.getAiDamageScore());
-            m.put("estimatedClaim", c.getEstimatedPayout());
-            m.put("status",         c.getStatus());
 
-            // Enrich: farmer info
+            // ── Core claim fields ──────────────────────────────────────────────
+            m.put("claimId",          c.getId());
+            m.put("status",           c.getStatus());
+            m.put("calamityType",     c.getCalamityType());
+            m.put("dateOfLoss",       c.getDateOfLoss());
+            m.put("farmerId",         c.getFarmerId());
+            m.put("farmId",           c.getFarmId());
+
+            // ── AI result fields (needed by PDF generator) ─────────────────────
+            m.put("prediction",        c.getPrediction() != null ? c.getPrediction() : c.getCalamityType());
+            m.put("ai_damage_score",   c.getAiDamageScore());
+            m.put("damage_percent",    c.getAiDamageScore());
+            m.put("aiConfidence",      c.getAiConfidence());
+            m.put("confidence",        c.getAiConfidence());
+            m.put("aiReasoning",       c.getAiReasoning());
+            m.put("estimated_payout",  c.getEstimatedPayout());
+            m.put("estimated_claim",   c.getEstimatedPayout());
+            m.put("rainfallMm",        c.getRainfallMm());
+            m.put("rainfall7d",        c.getRainfall7d());
+            m.put("floodRisk",         c.getFloodRisk());
+            m.put("droughtRisk",       c.getDroughtRisk());
+            m.put("agentRemark",       c.getAgentRemark());
+
+            // ── Policy fields ─────────────────────────────────────────────────
+            m.put("sumInsuredPerAcre", c.getSumInsuredPerAcre());
+            m.put("totalSumInsured",   c.getTotalSumInsured());
+            m.put("farmAreaSnapshot",  c.getFarmAreaSnapshot());
+            m.put("estimatedPayout",   c.getEstimatedPayout());
+
+            // Rebuild policy_summary object for PDF
+            double sumIns = c.getTotalSumInsured() != null ? c.getTotalSumInsured() : 0.0;
+            double covUsed = c.getSumInsuredPerAcre() != null && sumIns > 0
+                    ? (c.getEstimatedPayout() != null ? c.getEstimatedPayout() / sumIns : 0.0)
+                    : 0.0;
+            Map<String, Object> policyMap = new LinkedHashMap<>();
+            policyMap.put("sum_insured",   sumIns);
+            policyMap.put("coverage_used", Math.min(covUsed, 1.0));
+            m.put("policy_summary", policyMap);
+
+            m.put("reportUrl", "http://localhost:8001/download-report/" + c.getId());
+
+            // ── Farmer info ───────────────────────────────────────────────────
             if (c.getFarmerId() != null) {
                 userRepository.findById(c.getFarmerId()).ifPresentOrElse(u -> {
                     m.put("farmerName",  u.getFullName());
+                    m.put("farmerEmail", u.getEmail());
                 }, () -> {
-                    m.put("farmerName", "Unknown");
+                    m.put("farmerName",  "Unknown");
+                    m.put("farmerEmail", "");
                 });
             } else {
-                m.put("farmerName", "Unknown");
+                m.put("farmerName",  "Unknown");
+                m.put("farmerEmail", "");
             }
 
-            // Enrich: farm info
+            // ── Farm info ─────────────────────────────────────────────────────
             if (c.getFarmId() != null) {
                 farmRepository.findById(c.getFarmId()).ifPresentOrElse(f -> {
-                    m.put("district",   f.getDistrict());
-                    m.put("crop",       f.getPrimaryCrop());
+                    m.put("farmName",  f.getFarmName());
+                    m.put("district",  f.getDistrict());
+                    m.put("village",   f.getVillage());
+                    m.put("cropType",  f.getPrimaryCrop());
+                    m.put("latitude",  null);
+                    m.put("longitude", null);
+                    m.put("areaAcres", f.getAreaAcres());
                 }, () -> {
-                    m.put("district", "Unknown");
-                    m.put("crop", "Unknown");
+                    m.put("farmName",  "Unknown");
+                    m.put("district",  "Unknown");
+                    m.put("village",   "Unknown");
+                    m.put("cropType",  "N/A");
+                    m.put("latitude",  null);
+                    m.put("longitude", null);
+                    m.put("areaAcres", null);
                 });
             } else {
-                m.put("district", "Unknown");
-                m.put("crop", "Unknown");
+                m.put("farmName",  "Unknown");
+                m.put("district",  "Unknown");
+                m.put("village",   "Unknown");
+                m.put("cropType",  "N/A");
+                m.put("latitude",  null);
+                m.put("longitude", null);
+                m.put("areaAcres", null);
             }
             return m;
         }).collect(Collectors.toList());
@@ -130,7 +182,7 @@ public class AgentController {
             @RequestBody Map<String, String> body) {
 
         String newStatus  = body.getOrDefault("status", "");
-        String agentNotes = body.getOrDefault("agentNotes", "");
+        String agentNotes = body.getOrDefault("remark", body.getOrDefault("agentNotes", ""));
 
         Set<String> valid = Set.of("PENDING", "IN_REVIEW", "APPROVED", "REJECTED", "MANUAL_REVIEW");
         if (!valid.contains(newStatus)) {
@@ -139,8 +191,13 @@ public class AgentController {
         }
 
         return claimRepository.findById(id).map(claim -> {
+            String timelineEntry = "Agent marked claim as " + newStatus + " with remark: " + agentNotes;
+            String finalRemark = claim.getAgentRemark() == null || claim.getAgentRemark().isBlank()
+                    ? timelineEntry
+                    : claim.getAgentRemark() + "\n" + timelineEntry;
+
             // ONLY update status and agent_remark using custom JPQL query to ensure AI fields are not overwritten
-            claimRepository.updateStatusAndRemark(id, newStatus, agentNotes, LocalDateTime.now());
+            claimRepository.updateStatusAndRemark(id, newStatus, finalRemark, LocalDateTime.now());
 
             // Send email notification to farmer
             if (claim.getFarmerId() != null) {

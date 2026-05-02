@@ -44,13 +44,13 @@ export default function AgentDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Registered Farmers</h1>
+        <h1 className="text-2xl font-black text-[#222] tracking-tight">Registered Farmers</h1>
         <p className="text-slate-500 text-sm mt-1">
           {loading ? 'Loading directory...' : `${farmersData.length} farmers in your jurisdiction`}
         </p>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xl shadow-slate-200/50">
+      <div className="bg-[#f5f5f5] border border-slate-200 rounded-2xl overflow-hidden shadow-xl shadow-slate-200/50">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 text-slate-500 uppercase tracking-widest text-[10px] border-b border-slate-200">

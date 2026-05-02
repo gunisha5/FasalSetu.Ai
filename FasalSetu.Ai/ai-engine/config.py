@@ -55,7 +55,7 @@ RANDOM_STATE: int   = int(os.getenv("RF_RANDOM_STATE", "42"))
 
 # ── OpenWeatherMap — Weather Monitor ─────────────────────────────────────────
 # Get a free API key from https://openweathermap.org/api
-OPENWEATHER_API_KEY: str            = os.getenv("OPENWEATHER_API_KEY", "")
+OPENWEATHER_API_KEY: str            = os.getenv("OPENWEATHER_API_KEY", "8c13010e4434a4ab168763ecea792678")
 WEATHER_API_TIMEOUT_SECS: int       = int(os.getenv("WEATHER_API_TIMEOUT_SECS", "8"))
 
 # Flood risk: rainfall in last 1 hour >= this value (mm) triggers flood signal
