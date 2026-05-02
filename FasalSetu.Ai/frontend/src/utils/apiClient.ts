@@ -2,7 +2,7 @@ import { api } from './api';
 import axios from 'axios';
 
 const aiApiBase = axios.create({
-  baseURL: 'http://localhost:8001',
+  baseURL: import.meta.env.VITE_AI_API_BASE_URL || 'http://localhost:8001',
 });
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
