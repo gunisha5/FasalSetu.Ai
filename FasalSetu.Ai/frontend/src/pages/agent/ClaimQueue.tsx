@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, Loader2, ChevronDown, AlertCircle, FileText, X, Download } from 'lucide-react';
+import { Search, Filter, Loader2, ChevronDown, AlertCircle, X, Download } from 'lucide-react';
 import { generateClaimReport } from '../../utils/generateClaimReport';
 import { api } from '../../utils/api';
 
@@ -12,8 +12,8 @@ interface ClaimRow {
   district: string;
   village: string;
   prediction: string;
-  ai_damage_score: number | null;
-  estimated_payout: number | null;
+  aiDamageScore: number | null;
+  estimatedPayout: number | null;
   status: string;
   reportUrl: string;
   // PDF report fields
@@ -21,12 +21,10 @@ interface ClaimRow {
   dateOfLoss: string;
   farmerId: number | null;
   farmId: number | null;
-  damage_percent: number | null;
-  confidence: number | null;
+  damagePercent: number | null;
   aiConfidence: number | null;
   aiReasoning: string | null;
-  estimated_claim: number | null;
-  estimatedPayout: number | null;
+  estimatedClaim: number | null;
   rainfallMm: number | null;
   rainfall7d: number | null;
   floodRisk: number | null;
@@ -38,7 +36,7 @@ interface ClaimRow {
   areaAcres: number | null;
   latitude: number | null;
   longitude: number | null;
-  policy_summary: { sum_insured: number; coverage_used: number } | null;
+  policySummary: { sumInsured: number; coverageUsed: number } | null;
   agentRemark: string | null;
 }
 
@@ -230,7 +228,7 @@ export default function ClaimQueue() {
                   </td>
                 </tr>
               ) : filtered.map(c => {
-                const dmg = c.ai_damage_score;
+                const dmg = c.aiDamageScore;
                 const predictionType = c.prediction;
                 
                 return (
@@ -256,7 +254,7 @@ export default function ClaimQueue() {
                       {dmg != null ? `${dmg.toFixed(2)}%` : <span className="text-slate-400">N/A</span>}
                     </td>
                     <td className="p-4 font-mono font-bold text-brand-600">
-                      {c.estimated_payout != null ? `₹${c.estimated_payout.toLocaleString('en-IN')}` : '₹0'}
+                      {c.estimatedPayout != null ? `₹${c.estimatedPayout.toLocaleString('en-IN')}` : '₹0'}
                     </td>
                     <td className="p-4 text-center">
                       <button
@@ -282,11 +280,10 @@ export default function ClaimQueue() {
                                 dateOfLoss:        c.dateOfLoss,
                                 status:            c.status,
                                 prediction:        c.prediction,
-                                confidence:        c.confidence ?? c.aiConfidence ?? undefined,
                                 aiConfidence:      c.aiConfidence ?? undefined,
-                                damage_percent:    c.damage_percent ?? c.ai_damage_score ?? undefined,
-                                aiDamageScore:     c.ai_damage_score ?? undefined,
-                                estimated_claim:   c.estimated_claim ?? c.estimatedPayout ?? undefined,
+                                damagePercent:     c.damagePercent ?? c.aiDamageScore ?? undefined,
+                                aiDamageScore:     c.aiDamageScore ?? undefined,
+                                estimatedClaim:    c.estimatedClaim ?? c.estimatedPayout ?? undefined,
                                 estimatedPayout:   c.estimatedPayout ?? undefined,
                                 aiReasoning:       c.aiReasoning ?? undefined,
                                 rainfallMm:        c.rainfallMm ?? undefined,
@@ -296,7 +293,7 @@ export default function ClaimQueue() {
                                 totalSumInsured:   c.totalSumInsured ?? undefined,
                                 sumInsuredPerAcre: c.sumInsuredPerAcre ?? undefined,
                                 farmAreaSnapshot:  c.farmAreaSnapshot ?? undefined,
-                                policy_summary:    c.policy_summary ?? undefined,
+                                policySummary:     c.policySummary ?? undefined,
                               },
                               farmerName:    c.farmerName || 'Unknown Farmer',
                               farmerEmail:   c.farmerEmail || '',

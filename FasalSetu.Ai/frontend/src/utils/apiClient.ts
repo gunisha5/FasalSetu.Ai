@@ -75,26 +75,43 @@ export interface Claim {
   totalSumInsured?: number;
   farmAreaSnapshot?: number;
   estimatedPayout?: number;
+  coverageApplied?: number; // Added
   rainfallMm?: number;
   rainfall7d?: number;
   tempAvg?: number;
   floodRisk?: number;
   droughtRisk?: number;
   prediction?: string;
-  damage_percent?: number;
-  estimated_claim?: number;
-  policy_summary?: {
-    sum_insured: number;
-    coverage_used: number;
+  damagePercent?: number; // Renamed from damage_percent
+  estimatedClaim?: number; // Renamed from estimated_claim
+  policySummary?: { // Renamed from policy_summary
+    sumInsured: number;
+    coverageUsed: number;
   };
   explanation?: string;
   warning?: string;
 }
 
+export const mapClaim = (data: any): Claim => ({
+  ...data,
+  aiDamageScore:   data.aiDamageScore || data.ai_damage_score,
+  aiConfidence:    data.aiConfidence || data.confidence || data.ai_confidence,
+  estimatedPayout: data.estimatedPayout || data.estimated_payout,
+  estimatedClaim:  data.estimatedClaim || data.estimated_claim,
+  damagePercent:   data.damagePercent || data.damage_percent,
+  coverageApplied: data.coverageApplied || data.coverage_applied,
+  policySummary:   data.policySummary || data.policy_summary ? {
+    sumInsured:    data.policySummary?.sumInsured || data.policy_summary?.sum_insured,
+    coverageUsed:  data.policySummary?.coverageUsed || data.policy_summary?.coverage_used,
+  } : undefined
+});
+
 export const claimApi = {
   getAll: (farmerId: number) =>
-    api.get<Claim[]>('/farmer/claims', { params: { farmerId } }),
-  file: (claim: Claim)   => api.post<Claim>('/farmer/claims/file', claim),
+    api.get<Claim[]>('/farmer/claims', { params: { farmerId } })
+      .then(res => ({ ...res, data: res.data.map(mapClaim) })),
+  file: (claim: Claim)   => api.post<Claim>('/farmer/claims/file', claim)
+      .then(res => ({ ...res, data: mapClaim(res.data) })),
   delete: (id: number, farmerId: number) =>
     api.delete(`/farmer/claims/${id}`, { params: { farmerId } }),
 };

@@ -24,7 +24,7 @@ import AgentLayout from './layouts/AgentLayout';
 import AgentDashboard from './pages/agent/AgentDashboard';
 import ClaimQueue from './pages/agent/ClaimQueue';
 import ClaimReview from './pages/agent/ClaimReview';
-import MapOverview from './pages/agent/MapOverview';
+
 
 import ProtectedRoute from './components/ProtectedRoute';
 import OfflineBanner from './components/OfflineBanner';

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ClipboardList, Plus, FileX, ArrowRight } from 'lucide-react';
 import { claimApi, farmApi } from '../../../utils/apiClient';
-import type { Claim, Farm } from '../../../utils/apiClient';
+import type { Claim } from '../../../utils/apiClient';
 import { useAuthStore } from '../../../store/authStore';
 import LoadingSkeleton from '../../../components/LoadingSkeleton';
 import ErrorBanner from '../../../components/ErrorBanner';

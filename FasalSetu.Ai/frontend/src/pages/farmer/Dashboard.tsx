@@ -3,7 +3,7 @@ import { Sprout, Map, AlertTriangle, ArrowRight, Wallet, ClipboardList, PlusCirc
 import { useAuthStore } from '../../store/authStore';
 import { useEffect, useState } from 'react';
 import { farmApi, claimApi } from '../../utils/apiClient';
-import type { Claim, Farm } from '../../utils/apiClient';
+import type { Claim } from '../../utils/apiClient';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
@@ -43,7 +43,7 @@ export default function Dashboard() {
       // Wallet = sum of payouts for APPROVED claims
       const approvedPayout = allClaims
         .filter(c => c.status === 'APPROVED')
-        .reduce((acc, c) => acc + (c.estimatedPayout ?? c.estimated_claim ?? 0), 0);
+        .reduce((acc, c) => acc + (c.estimatedPayout ?? c.estimatedClaim ?? 0), 0);
       setWalletBalance(approvedPayout);
       
       // Active claims = not APPROVED and not REJECTED

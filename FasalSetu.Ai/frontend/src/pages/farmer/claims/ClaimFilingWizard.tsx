@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Camera, UploadCloud, CheckCircle, ShieldAlert, Cpu, Loader2, MapPin, Trash2, FileText, CloudRain, Sun, Wind, Bug, Shrub, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Camera, UploadCloud, CheckCircle, ShieldAlert, Cpu, Loader2, MapPin, Trash2, FileText, CloudRain, Sun, Shrub, AlertTriangle } from 'lucide-react';
 import { claimApi, authApi, farmApi, aiApi, type Farm } from '../../../utils/apiClient';
 import { useAuthStore } from '../../../store/authStore';
 import { useUIStore } from '../../../store/uiStore';
@@ -105,15 +105,15 @@ export default function ClaimFilingWizard() {
         calamityType: formData.calamityType,
         dateOfLoss: formData.dateOfLoss,
         sumInsuredPerAcre: formData.policyDetails.sumInsuredPerAcre,
-        totalSumInsured: aiData.policy_summary?.sum_insured || formData.policyDetails.totalSumInsured,
+        totalSumInsured: aiData.policySummary?.sumInsured || aiData.policy_summary?.sum_insured || formData.policyDetails.totalSumInsured,
         farmAreaSnapshot: selectedFarm?.areaAcres || 0,
         // Sync AI results
         prediction: aiData.prediction,
-        confidence: aiData.confidence,
-        damage_percent: aiData.damage_percent,
-        estimated_claim: aiData.estimated_claim,
+        aiConfidence: aiData.confidence || aiData.aiConfidence,
+        damagePercent: aiData.damage_percent || aiData.damagePercent,
+        estimatedClaim: aiData.estimated_claim || aiData.estimatedClaim,
         explanation: aiData.explanation,
-        coverage_applied: aiData.policy_summary?.coverage_used,
+        coverageApplied: aiData.policySummary?.coverageUsed || aiData.policy_summary?.coverage_used,
         rainfallMm: aiData.features?.rainfall_current,
         rainfall7d: aiData.features?.rainfall_7d,
         floodRisk: aiData.features?.flood_risk,
@@ -462,23 +462,14 @@ export default function ClaimFilingWizard() {
 
                              const isCovered = policyData.coveredRisks.includes(formData.calamityType);
                              let alert = '';
-                             let finalEstimate = 0;
                              let ratePerAcre = 0;
-                             let areaInAcres = 0;
 
                              if (!isCovered) {
                                 alert = `Your policy does not cover ${formData.calamityType}. Please upload another policy document.`;
                              } else {
                                 // Unit Conversion
-                                areaInAcres = policyData.unit === 'Hectare' ? policyData.insuredArea * 2.471 : policyData.insuredArea;
+                                const areaInAcres = policyData.unit === 'Hectare' ? policyData.insuredArea * 2.471 : policyData.insuredArea;
                                 ratePerAcre = policyData.sumInsured / areaInAcres;
-                                
-                                // Dynamic Calculation based on Farmer's current report
-                                const selectedFarm = farms.find(f => f.id === formData.farmId);
-                                const farmerAreaAcres = selectedFarm?.areaAcres || 0;
-                                
-                                // Formula: (Policy Rate per Acre) * (Farmer's Actual Farm Size)
-                                finalEstimate = ratePerAcre * farmerAreaAcres;
                              }
 
                              setFormData(prev => ({

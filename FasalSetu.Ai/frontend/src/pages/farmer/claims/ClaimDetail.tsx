@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, Clock, Info, Activity, FileText, Loader2, AlertCircle, TrendingUp, Coins, Leaf, ShieldCheck, Download } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, Info, Activity, Loader2, AlertCircle, TrendingUp, Coins, Leaf, ShieldCheck, Download } from 'lucide-react';
 import { claimApi, farmApi } from '../../../utils/apiClient';
 import type { Claim } from '../../../utils/apiClient';
 import { useAuthStore } from '../../../store/authStore';
@@ -104,14 +104,14 @@ export default function ClaimDetail() {
 
   // Simple Logic for Display
   const prediction = claim.prediction || claim.calamityType || 'NORMAL';
-  const damagePercent = claim.damage_percent ?? claim.ai_damage_score;
-  const estimatedClaim = claim.estimated_claim ?? claim.estimated_payout;
+  const damagePercent = claim.damagePercent ?? claim.aiDamageScore;
+  const estimatedClaim = claim.estimatedClaim ?? claim.estimatedPayout;
   // Fix: sanitize "null [WARNING...]" stored strings from older claims
   const rawExplanation = claim.explanation || claim.aiReasoning || '';
   const explanation = rawExplanation.replace(/^null\s*/i, '').trim() || 'Your analysis is complete.';
   const warning = claim.warning;
-  const confidence = claim.confidence ?? claim.ai_confidence;
-  const policySummary = claim.policy_summary || { sum_insured: claim.totalSumInsured || 0, coverage_used: claim.coverage_applied || 0 };
+  const confidence = claim.aiConfidence;
+  const policySummary = claim.policySummary || { sumInsured: claim.totalSumInsured || 0, coverageUsed: claim.coverageApplied || 0 };
 
   const getStatusColor = (p: string) => {
     if (p === 'DROUGHT') return 'from-orange-500 to-orange-600 shadow-orange-200';
@@ -124,9 +124,9 @@ export default function ClaimDetail() {
   const isApproved  = claimStatus === 'APPROVED';
   const isRejected  = claimStatus === 'REJECTED';
   const isInReview  = claimStatus === 'IN_REVIEW' || claimStatus === 'MANUAL_REVIEW';
-  const hasAI       = !!(claim.prediction || claim.ai_damage_score || claim.aiDamageScore);
-  const hasDamage   = (claim.damage_percent ?? claim.ai_damage_score) != null;
-  const hasClaim    = (claim.estimated_claim ?? claim.estimated_payout ?? claim.estimatedPayout) != null;
+  const hasAI       = !!(claim.prediction || claim.aiDamageScore);
+  const hasDamage   = (claim.damagePercent ?? claim.aiDamageScore) != null;
+  const hasClaim    = (claim.estimatedClaim ?? claim.estimatedPayout) != null;
 
   const timelineSteps = [
     {
@@ -293,7 +293,7 @@ export default function ClaimDetail() {
                   </div>
                   <span className="text-slate-500 font-bold">Sum Insured</span>
                 </div>
-                <span className="text-xl font-black text-slate-800">₹{policySummary.sum_insured.toLocaleString()}</span>
+                <span className="text-xl font-black text-slate-800">₹{policySummary.sumInsured.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center group-hover:translate-x-1 transition-transform">
                 <div className="flex items-center gap-3">
@@ -302,7 +302,7 @@ export default function ClaimDetail() {
                   </div>
                   <span className="text-slate-500 font-bold">Coverage Applied</span>
                 </div>
-                <span className="text-xl font-black text-brand-600 bg-brand-50 px-4 py-1.5 rounded-xl">{Math.round(policySummary.coverage_used * 100)}%</span>
+                <span className="text-xl font-black text-brand-600 bg-brand-50 px-4 py-1.5 rounded-xl">{Math.round(policySummary.coverageUsed * 100)}%</span>
               </div>
             </div>
           </div>

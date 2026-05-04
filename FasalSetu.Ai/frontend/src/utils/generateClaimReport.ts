@@ -91,13 +91,13 @@ export function generateClaimReport(opts: ReportOptions) {
   const TOTAL_PAGES = 5;
 
   const prediction    = claim.prediction || claim.calamityType || 'UNKNOWN';
-  const confidence    = claim.confidence ?? claim.aiConfidence ?? 0;
+  const confidence    = claim.aiConfidence ?? 0;
   const confidencePct = Math.round(confidence * 100);
-  const damagePercent = claim.damage_percent ?? claim.aiDamageScore ?? 0;
-  const estimatedClaim = claim.estimated_claim ?? claim.estimatedPayout ?? 0;
-  const policySummary = claim.policy_summary || { 
-    sum_insured: claim.totalSumInsured || 0, 
-    coverage_used: claim.coverage_applied || 0 
+  const damagePercent = claim.damagePercent ?? claim.aiDamageScore ?? 0;
+  const estimatedClaim = claim.estimatedClaim ?? claim.estimatedPayout ?? 0;
+  const policySummary = claim.policySummary || { 
+    sumInsured: claim.totalSumInsured || 0, 
+    coverageUsed: claim.coverageApplied || 0 
   };
   const features: Record<string, number> = (claim as any).features || {};
   const claimDate     = claim.dateOfLoss || new Date().toISOString().split('T')[0];
@@ -198,8 +198,8 @@ export function generateClaimReport(opts: ReportOptions) {
   y += 30;
   y = sectionTitle(doc, '3. Policy Information', y);
 
-  const sumInsured    = policySummary.sum_insured;
-  const coverageUsed  = policySummary.coverage_used;
+  const sumInsured    = policySummary.sumInsured;
+  const coverageUsed  = policySummary.coverageUsed;
   const maxClaim      = sumInsured * coverageUsed;
 
   autoTable(doc, {
@@ -377,9 +377,9 @@ export function generateClaimReport(opts: ReportOptions) {
   const tlApproved   = claimStatus === 'APPROVED';
   const tlRejected   = claimStatus === 'REJECTED';
   const tlInReview   = claimStatus === 'IN_REVIEW' || claimStatus === 'MANUAL_REVIEW';
-  const tlHasAI      = !!(claim.prediction || claim.damage_percent || claim.aiDamageScore);
-  const tlHasDamage  = (claim.damage_percent ?? claim.aiDamageScore) != null;
-  const tlHasClaim   = (claim.estimated_claim ?? claim.estimatedPayout) != null;
+  const tlHasAI      = !!(claim.prediction || claim.damagePercent || claim.aiDamageScore);
+  const tlHasDamage  = (claim.damagePercent ?? claim.aiDamageScore) != null;
+  const tlHasClaim   = (claim.estimatedClaim ?? claim.estimatedPayout) != null;
 
   const timelineSteps: { label: string; done: boolean; current: boolean; tag: string; tagColor: [number,number,number] }[] = [
     {

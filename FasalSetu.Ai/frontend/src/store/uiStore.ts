@@ -34,7 +34,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   },
 
   stopLoading: () => {
-    const { activeRequests, loadingTimeout, isLoading } = get();
+    const { activeRequests, loadingTimeout } = get();
     const newCount = Math.max(0, activeRequests - 1);
 
     if (newCount === 0) {
