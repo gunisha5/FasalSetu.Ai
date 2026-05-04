@@ -9,12 +9,16 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
+
 @Service
 public class AiIntegrationService {
 
     private static final Logger logger = LoggerFactory.getLogger(AiIntegrationService.class);
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final String AI_ENGINE_URL = "http://localhost:8001/predict";
+    
+    @Value("${AI_ENGINE_URL:http://localhost:8001/predict}")
+    private String aiEngineUrl;
 
 
     public static class DamageRequest {
@@ -65,8 +69,8 @@ public class AiIntegrationService {
             body.add("lang", lang);
             
             // Step E: Add debug logs
-            System.out.println("[AI CALL URL] " + AI_ENGINE_URL);
-            logger.info("Calling AI Engine at {} for Farm ID: {}", AI_ENGINE_URL, farm.getId());
+            System.out.println("[AI CALL URL] " + aiEngineUrl);
+            logger.info("Calling AI Engine at {} for Farm ID: {}", aiEngineUrl, farm.getId());
 
             org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
             headers.setContentType(org.springframework.http.MediaType.MULTIPART_FORM_DATA);
@@ -74,7 +78,7 @@ public class AiIntegrationService {
             org.springframework.http.HttpEntity<org.springframework.util.MultiValueMap<String, Object>> requestEntity = 
                 new org.springframework.http.HttpEntity<>(body, headers);
 
-            return restTemplate.postForObject(AI_ENGINE_URL, requestEntity, DamageResponse.class);
+            return restTemplate.postForObject(aiEngineUrl, requestEntity, DamageResponse.class);
         } catch (Exception e) {
             // Step F: Handle failure safely
             logger.error("AI Engine call failed: {}", e.getMessage());
