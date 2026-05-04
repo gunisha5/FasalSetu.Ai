@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+python-dotenv
+pandas
+requests
+earthengine-api
+scikit-learn
+numpy
+matplotlib
+reportlab
+pillow
+pymupdf
+python-multipart

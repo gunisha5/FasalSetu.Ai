@@ -1,3 +1,4 @@
 data/
 .vscode/
-*.txt
+# Allow requirements.txt even if other .txt files are ignored
+!requirements.txt
