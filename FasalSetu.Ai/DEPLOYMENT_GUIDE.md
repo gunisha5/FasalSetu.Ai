@@ -71,3 +71,5 @@ Vercel is the easiest platform for deploying React/Vite applications.
 ## Important Notes for Free Tiers
 - **Render Cold Starts:** Because you are on the Free tier on Render, your backends will go to "sleep" after 15 minutes of inactivity. When you try to log in or use the app after it has been asleep, the very first request might take **50 seconds** to load. This is normal for free hosting.
 - **Push your code:** Before doing any of the steps above, make sure you commit and push the new `Dockerfile` and `application.properties` changes I just made to your GitHub repository!
+
+<!-- Triggering fresh deployment to correct repository -->
