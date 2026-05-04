@@ -22,7 +22,7 @@ RELOAD: bool    = os.getenv("AI_ENGINE_RELOAD", "true").lower() == "true"
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE_DIR: Path          = Path(__file__).parent.resolve()
-DATA_DIR: Path          = BASE_DIR.parent          # Project root holds the CSVs
+DATA_DIR: Path          = BASE_DIR / "data"
 ICRISAT_CSV: Path       = DATA_DIR / "ICRISAT-District Level Data.csv"
 FLOOD_CSV: Path         = DATA_DIR / "India_Flood_Inventory_v3.csv"
 MODEL_PATH: Path        = BASE_DIR / "models" / "random_forest.pkl"

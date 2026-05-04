@@ -4,10 +4,11 @@ from pathlib import Path
 import os
 
 # Paths
-BASE_DIR = Path("c:/Users/manya/Downloads/FasalSetu.Ai/FasalSetu.Ai")
-FLOOD_CSV = BASE_DIR / "India_Flood_Inventory_v3.csv"
-ICRISAT_CSV = r"C:\Users\manya\Downloads\FasalSetu.Ai\FasalSetu.Ai\ICRISAT-District Level Data.csv"
-OUTPUT_CSV = BASE_DIR / "ai-engine" / "data" / "district_risk_dataset.csv"
+AI_DIR = Path(__file__).parent
+FLOOD_CSV = AI_DIR / "data" / "India_Flood_Inventory_v3.csv"
+# Use relative path from the script's directory
+ICRISAT_CSV = AI_DIR / "data" / "ICRISAT-District Level Data.csv"
+OUTPUT_CSV = AI_DIR / "data" / "district_risk_dataset.csv"
 
 def generate_risk():
     print("Starting risk calculation...")

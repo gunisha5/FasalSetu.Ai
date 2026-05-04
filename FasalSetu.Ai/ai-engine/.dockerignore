@@ -5,8 +5,10 @@ __pycache__/
 .env
 .git
 .gitignore
-data/
+# Don't ignore the models we want to deploy
+# models/*.pkl
+# Don't ignore the data folder as we need the CSVs
+# data/
 reports/
-models/*.pkl
 scratch/
 temp_*.pdf
