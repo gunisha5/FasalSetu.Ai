@@ -12,9 +12,12 @@ __pycache__/
 secrets/
 *.json
 
-# ML model artefacts (regeneratable)
-models/*.pkl
-data/training_features.csv
+# Allow ML models to be deployed
+# models/*.pkl
+# Allow datasets
+!data/*.csv
+# Only ignore the raw training features if they are too big, but let's allow them for now
+#!data/training_features.csv
 
 # IDE
 .vscode/
