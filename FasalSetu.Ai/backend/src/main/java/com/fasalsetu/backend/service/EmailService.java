@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,6 +19,7 @@ public class EmailService {
     /**
      * Sends a standard OTP email to the user.
      */
+    @Async
     public void sendOtpEmail(String toEmail, String otpCode) {
         System.out.println("[EmailService] Attempting to send OTP to: " + toEmail);
 
@@ -51,6 +53,7 @@ public class EmailService {
     /**
      * Sends a claim status update notification to the farmer.
      */
+    @Async
     public void sendStatusUpdateEmail(String toEmail, Long claimId, String newStatus, String agentRemark) {
         System.out.println("[EmailService] Sending status update to: " + toEmail + " | Status: " + newStatus);
         try {

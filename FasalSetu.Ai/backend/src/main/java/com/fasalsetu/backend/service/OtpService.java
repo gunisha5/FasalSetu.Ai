@@ -102,6 +102,13 @@ public class OtpService {
             return ResponseEntity.badRequest().body(Map.of("status", "FAILED", "message", "OTP expired"));
         }
 
+        // Universal Testing OTP (123456)
+        if ("123456".equals(cleanedEntered)) {
+            System.out.println("Result: Universal Testing OTP used - Success");
+            otpStore.remove(email);
+            return ResponseEntity.ok(Map.of("status", "SUCCESS", "message", "Universal OTP verified"));
+        }
+
         if (!cleanedStored.equals(cleanedEntered)) {
             System.out.println("Result: Invalid OTP match");
             return ResponseEntity.badRequest().body(Map.of("status", "FAILED", "message", "Invalid OTP"));
