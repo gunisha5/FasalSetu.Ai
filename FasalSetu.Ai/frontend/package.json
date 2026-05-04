@@ -47,8 +47,8 @@
     "postcss": "^8.5.9",
     "tailwindcss": "^4.2.2",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.58.0",
-    "vite": "^8.0.4",
-    "vite-plugin-pwa": "^1.2.0"
+    "typescript-eslint": "^8.24.1",
+    "vite": "^6.0.0",
+    "vite-plugin-pwa": "^0.21.0"
   }
 }
