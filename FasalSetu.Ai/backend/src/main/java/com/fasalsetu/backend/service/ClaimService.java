@@ -74,6 +74,18 @@ public class ClaimService {
                     
                     // Use the claim value directly from AI engine
                     saved.setEstimatedPayout(aiResponse.estimated_claim != null ? aiResponse.estimated_claim : 0.0);
+
+                    // Extract Coverage Applied from Policy Summary
+                    if (aiResponse.policy_summary != null && aiResponse.policy_summary.containsKey("coverage_used")) {
+                        try {
+                            Object coverage = aiResponse.policy_summary.get("coverage_used");
+                            if (coverage instanceof Number) {
+                                saved.setCoverageApplied(((Number) coverage).doubleValue());
+                            }
+                        } catch (Exception e) {
+                            System.out.println("Failed to parse coverage_used: " + e.getMessage());
+                        }
+                    }
                 }
 
                 // All claims must be reviewed manually as per new security policy

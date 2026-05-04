@@ -40,7 +40,7 @@ def parse_policy_json(text):
         "coverage": {
             "DROUGHT": coverage_drought,
             "FLOOD": coverage_flood,
-            "NORMAL": 0.0
+            "NORMAL": 0.10  # 10% baseline coverage for demo payouts
         },
         "max_claim": max_claim
     }
@@ -121,12 +121,12 @@ def generate_explanation(prediction, damage, policy, claim):
     Generates a human-readable explanation for the claim estimation.
     """
     if prediction == "NORMAL":
-        return "No significant damage detected. Claim amount is minimal."
+        return f"Minimal environmental variance detected ({damage}%). A small payout has been estimated based on baseline policy coverage for minor crop health fluctuations."
     
     coverage_val = policy.get("coverage", {}).get(prediction, 0.0)
     
     return f"""
-Damage detected: {damage}%
+AI Analysis complete. {prediction} detected with {damage}% estimated crop damage.
 Policy coverage applied: {int(coverage_val * 100)}%
 Estimated claim based on your policy terms.
 """.strip()

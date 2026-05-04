@@ -47,11 +47,12 @@ public class AiIntegrationService {
         public String status;
         public double confidence;
         public String prediction;
-        public String explanation; // Matches AI engine field
+        public String explanation; 
         public Double damage_percent;
         public String warning;
         public Map<String, Double> features;
         public Double estimated_claim;
+        public Map<String, Object> policy_summary;
     }
 
     public DamageResponse analyzeDamage(Farm farm, Claim claim, String lang) {
