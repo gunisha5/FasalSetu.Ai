@@ -330,9 +330,9 @@ async def analyze(
         explanation = None
 
         if not policy_pdf:
-            claim_amount = round(damage_percent * 500, 2) # Fallback calculation
+            policy_summary = {"sum_insured": 50000, "coverage_used": 0.1} # Demo fallback 10%
+            claim_amount = round(50000 * (damage_percent / 100) * 0.1, 2)
             explanation = f"AI Analysis complete. {prediction} detected with {damage_percent}% estimated crop damage."
-            policy_summary = {"sum_insured": 0, "coverage_used": 0}
 
         if policy_pdf:
             import uuid
