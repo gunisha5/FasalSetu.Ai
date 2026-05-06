@@ -93,12 +93,27 @@ export function generateClaimReport(opts: ReportOptions) {
   const prediction    = claim.prediction || claim.calamityType || 'UNKNOWN';
   const confidence    = claim.aiConfidence ?? 0;
   const confidencePct = Math.round(confidence * 100);
-  const damagePercent = claim.damagePercent ?? claim.aiDamageScore ?? 0;
-  const estimatedClaim = claim.estimatedClaim ?? claim.estimatedPayout ?? 0;
+  
+  // Robust Fallbacks for PDF data
+  const damagePercent = 
+    claim.aiDamageScore ?? 
+    (claim as any).ai_damage_score ?? 
+    (claim as any).damage_percent ?? 
+    claim.damagePercent ?? 
+    0;
+
+  const estimatedClaim = 
+    claim.estimatedPayout ?? 
+    (claim as any).estimated_payout ?? 
+    (claim as any).estimated_claim ?? 
+    claim.estimatedClaim ?? 
+    0;
+
   const policySummary = claim.policySummary || { 
     sumInsured: claim.totalSumInsured || 0, 
-    coverageUsed: claim.coverageApplied || 0 
+    coverageUsed: claim.coverageApplied ?? (claim as any).coverage_applied ?? 0.1 // Default to 10%
   };
+
   const features: Record<string, number> = (claim as any).features || {};
   const claimDate     = claim.dateOfLoss || new Date().toISOString().split('T')[0];
   const claimId       = claim.id ? `CLM-${String(claim.id).padStart(6, '0')}` : 'CLM-PENDING';

@@ -106,7 +106,12 @@ export default function ClaimList() {
                     {claim.calamityType} {t('claims.damage')} 
                     <span className="text-gray-500 font-normal ml-2">• {farms[claim.farmId!] || 'Field #' + claim.farmId}</span>
                   </h3>
-                  <p className={`text-sm font-semibold ${c.dot}`}>{claim.status?.replace('_', ' ')}</p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <p className={`text-xs font-semibold px-2 py-0.5 rounded-md ${c.bg} ${c.dot}`}>{claim.status?.replace('_', ' ')}</p>
+                    <span className="text-xs text-gray-500 font-bold">
+                      Damage: {(claim.aiDamageScore ?? (claim as any).ai_damage_score ?? (claim as any).damage_percent ?? 0).toFixed(1)}%
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button onClick={(e) => handleDelete(e, claim.id!)} className="p-3 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100">

@@ -73,6 +73,13 @@ export default function ClaimDetail() {
     load();
   }, [id, farmerId, claim]);
 
+  // DEBUGGING: Log claim data to check for snake_case vs camelCase
+  useEffect(() => {
+    if (claim) {
+      console.log("CLAIM DATA:", claim);
+    }
+  }, [claim]);
+
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
       <div className="relative">
@@ -102,16 +109,41 @@ export default function ClaimDetail() {
     </div>
   );
 
-  // Simple Logic for Display
+  // Simple Logic for Display with robust fallbacks
   const prediction = claim.prediction || claim.calamityType || 'NORMAL';
-  const damagePercent = claim.damagePercent ?? claim.aiDamageScore;
-  const estimatedClaim = claim.estimatedClaim ?? claim.estimatedPayout;
+  
+  // Support aiDamageScore (camel), ai_damage_score (snake), or damage_percent (AI engine)
+  const damagePercent = 
+    claim.aiDamageScore ?? 
+    (claim as any).ai_damage_score ?? 
+    (claim as any).damage_percent ?? 
+    claim.damagePercent ?? 
+    0;
+
+  // Support estimatedPayout (camel), estimated_payout (snake), or estimated_claim (AI engine)
+  const estimatedClaim = 
+    claim.estimatedPayout ?? 
+    (claim as any).estimated_payout ?? 
+    (claim as any).estimated_claim ?? 
+    claim.estimatedClaim ?? 
+    0;
+
   // Fix: sanitize "null [WARNING...]" stored strings from older claims
   const rawExplanation = claim.explanation || claim.aiReasoning || '';
   const explanation = rawExplanation.replace(/^null\s*/i, '').trim() || 'Your analysis is complete.';
   const warning = claim.warning;
-  const confidence = claim.aiConfidence;
-  const policySummary = claim.policySummary || { sumInsured: claim.totalSumInsured || 0, coverageUsed: claim.coverageApplied || 0 };
+
+  // Support aiConfidence (camel), ai_confidence (snake), or confidence (AI engine)
+  const confidence = 
+    claim.aiConfidence ?? 
+    (claim as any).ai_confidence ?? 
+    (claim as any).confidence ?? 
+    0;
+
+  const policySummary = claim.policySummary || { 
+    sumInsured: claim.totalSumInsured || 0, 
+    coverageUsed: claim.coverageApplied ?? (claim as any).coverage_applied ?? 0 
+  };
 
   const getStatusColor = (p: string) => {
     if (p === 'DROUGHT') return 'from-orange-500 to-orange-600 shadow-orange-200';

@@ -33,19 +33,19 @@ public class Claim {
 
     // Computed via Satellite AI
     @Column(name = "ai_damage_score")
-    @JsonProperty("damage_percent")
+    @com.fasterxml.jackson.annotation.JsonAlias({"damage_percent", "ai_damage_score"})
     private Double aiDamageScore;
 
     @Column(name = "ai_confidence")
-    @JsonProperty("confidence")
+    @com.fasterxml.jackson.annotation.JsonAlias({"confidence", "ai_confidence"})
     private Double aiConfidence;
 
     @Column(name = "ai_reasoning", columnDefinition = "TEXT")
-    @JsonProperty("explanation")
+    @com.fasterxml.jackson.annotation.JsonAlias({"explanation", "ai_reasoning"})
     private String aiReasoning;
 
     @Column(name = "coverage_applied")
-    @JsonProperty("coverage_applied")
+    @com.fasterxml.jackson.annotation.JsonAlias({"coverage_applied"})
     private Double coverageApplied;
 
     @Column(name = "delta_ndvi")
@@ -94,7 +94,7 @@ public class Claim {
     private Double droughtRisk;
 
     @Column(name = "estimated_payout")
-    @JsonProperty("estimated_claim")
+    @com.fasterxml.jackson.annotation.JsonAlias({"estimated_claim", "estimated_payout"})
     private Double estimatedPayout;
 
     @Column(name = "created_at", updatable = false)
