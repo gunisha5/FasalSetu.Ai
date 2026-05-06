@@ -43,7 +43,8 @@ public class AgentController {
 
             // ── AI result fields (needed by PDF generator) ─────────────────────
             m.put("prediction",        c.getPrediction() != null ? c.getPrediction() : c.getCalamityType());
-            m.put("ai_damage_score",   c.getAiDamageScore());
+            m.put("aiDamageScore",     c.getAiDamageScore());  // camelCase for ClaimQueue.tsx
+            m.put("ai_damage_score",   c.getAiDamageScore());  // snake_case for PDF generator
             m.put("damage_percent",    c.getAiDamageScore());
             m.put("aiConfidence",      c.getAiConfidence());
             m.put("confidence",        c.getAiConfidence());
@@ -61,15 +62,14 @@ public class AgentController {
             m.put("totalSumInsured",   c.getTotalSumInsured());
             m.put("farmAreaSnapshot",  c.getFarmAreaSnapshot());
             m.put("estimatedPayout",   c.getEstimatedPayout());
+            m.put("coverageApplied",   c.getCoverageApplied());  // stored value
 
-            // Rebuild policy_summary object for PDF
-            double sumIns = c.getTotalSumInsured() != null ? c.getTotalSumInsured() : 0.0;
-            double covUsed = c.getSumInsuredPerAcre() != null && sumIns > 0
-                    ? (c.getEstimatedPayout() != null ? c.getEstimatedPayout() / sumIns : 0.0)
-                    : 0.0;
+            // Rebuild policy_summary using STORED coverageApplied (not back-calculated)
+            double sumIns  = c.getTotalSumInsured()  != null ? c.getTotalSumInsured()  : 0.0;
+            double covUsed = c.getCoverageApplied()  != null ? c.getCoverageApplied()  : 0.1;
             Map<String, Object> policyMap = new LinkedHashMap<>();
             policyMap.put("sum_insured",   sumIns);
-            policyMap.put("coverage_used", Math.min(covUsed, 1.0));
+            policyMap.put("coverage_used", covUsed);
             m.put("policy_summary", policyMap);
 
             m.put("reportUrl", "http://localhost:8001/download-report/" + c.getId());
@@ -138,6 +138,7 @@ public class AgentController {
             m.put("status",         c.getStatus());
             m.put("aiConfidence",   c.getAiConfidence());
             m.put("aiDamageScore",  c.getAiDamageScore());
+            m.put("coverageApplied",c.getCoverageApplied());  // stored value — used by ClaimReview.tsx
             m.put("aiReasoning",    c.getAiReasoning());
             m.put("droughtRisk",    c.getDroughtRisk());
             m.put("floodRisk",      c.getFloodRisk());
