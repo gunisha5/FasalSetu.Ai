@@ -34,6 +34,7 @@ interface DetailData {
   rainfallMm?: number;
   rainfall7d?: number;
   estimatedPayout?: number;
+  coverageApplied?: number;
   totalSumInsured?: number;
   sumInsuredPerAcre?: number;
   farmAreaSnapshot?: number;
@@ -88,6 +89,8 @@ export default function ClaimReview() {
         setData(res.data);
         setSelectedStatus(res.data.status);
         setAgentNotes(res.data.agentRemark || '');
+        // DEBUG: log raw claim data to check field names
+        console.log('CLAIM DATA:', res.data);
       })
       .catch(() => setToast({ type: 'error', msg: 'Failed to load claim.' }))
       .finally(() => setLoading(false));
@@ -137,14 +140,11 @@ export default function ClaimReview() {
         totalSumInsured: data.totalSumInsured,
         farmAreaSnapshot: data.farmAreaSnapshot,
         dateOfLoss: data.dateOfLoss,
-        damage_percent: data.aiDamageScore ?? (data.droughtRisk ? data.droughtRisk * 100 : 0),
-        estimated_claim: data.estimatedPayout ?? 0,
-        explanation: data.aiReasoning ?? '',
-        policy_summary: {
-          sum_insured: data.totalSumInsured ?? 0,
-          coverage_used: data.estimatedPayout && data.totalSumInsured && data.aiDamageScore
-            ? data.estimatedPayout / (data.totalSumInsured * data.aiDamageScore / 100)
-            : 0.8,
+        // Use stored coverageApplied directly — do NOT back-calculate
+        coverageApplied: (data as any).coverageApplied ?? undefined,
+        policySummary: {
+          sumInsured: data.totalSumInsured ?? 0,
+          coverageUsed: (data as any).coverageApplied ?? 0.1,
         },
       } as Claim;
 
@@ -176,7 +176,8 @@ export default function ClaimReview() {
   const confidence    = data.aiConfidence ?? 0;
   const confidencePct = Math.round(confidence * 100);
   const isLowConf     = confidence < 0.5;
-  const damage        = data.aiDamageScore ?? (data.droughtRisk ? data.droughtRisk * 100 : (data.floodRisk ? data.floodRisk * 100 : 0));
+  // aiDamageScore is stored as a fraction (0.0–1.0), convert to percentage for display
+  const damage        = data.aiDamageScore != null ? data.aiDamageScore * 100 : 0;
 
   return (
     <div className="space-y-6 pb-10">

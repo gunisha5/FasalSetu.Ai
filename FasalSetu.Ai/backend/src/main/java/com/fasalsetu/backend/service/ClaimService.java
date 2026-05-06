@@ -52,7 +52,7 @@ public class ClaimService {
             AiIntegrationService.DamageResponse aiResponse = aiIntegrationService.analyzeDamage(farm, saved, lang);
             
             if (aiResponse != null) {
-                if (aiResponse.estimated_claim == null && aiResponse.status.equals("ERROR")) {
+                if (aiResponse.estimated_claim == null && aiResponse.status != null && aiResponse.status.equals("ERROR")) {
                     System.out.println("Skipping invalid AI response");
                 } else {
                     // Update with detailed AI results
@@ -85,13 +85,25 @@ public class ClaimService {
                             
                             Object coverage = aiResponse.policy_summary.get("coverage_used");
                             if (coverage instanceof Number) {
-                                saved.setCoverageApplied(((Number) coverage).doubleValue());
+                                double aiCoverage = ((Number) coverage).doubleValue();
+                                // Only override if AI gave a meaningful value (>= 0.1 threshold)
+                                // Preserve user-submitted value if AI just returned the 10% default
+                                if (aiCoverage > 0.10 || saved.getCoverageApplied() == null) {
+                                    saved.setCoverageApplied(aiCoverage);
+                                }
                             }
                         } catch (Exception e) {
                             System.out.println("Failed to parse policy_summary: " + e.getMessage());
                         }
                     }
                 }
+
+                // Debug log before final save
+                System.out.println("[ClaimService] Saving claim id=" + saved.getId()
+                    + " aiDamageScore=" + saved.getAiDamageScore()
+                    + " aiConfidence=" + saved.getAiConfidence()
+                    + " coverageApplied=" + saved.getCoverageApplied()
+                    + " estimatedPayout=" + saved.getEstimatedPayout());
 
                 // All claims must be reviewed manually as per new security policy
                 saved.setStatus("MANUAL_REVIEW");
