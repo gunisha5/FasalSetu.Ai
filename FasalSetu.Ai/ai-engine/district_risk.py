@@ -77,6 +77,15 @@ class DistrictRiskService:
             return {"flood_risk": 0.2, "drought_risk": 0.3}
         if district == "assam":
             return {"flood_risk": 0.8, "drought_risk": 0.5}
+        # Lakhimpur (Assam) — high flood zone
+        if district in ("lakhimpur", "lakhimpur kheri", "north lakhimpur"):
+            return {"flood_risk": 0.82, "drought_risk": 0.2}
+        # Beed (Maharashtra) — severe drought zone
+        if district in ("beed", "bid"):
+            return {"flood_risk": 0.15, "drought_risk": 0.85}
+        # Sanand / Ahmedabad area — moderate drought
+        if district in ("sanand", "ahmedabad"):
+            return {"flood_risk": 0.25, "drought_risk": 0.7}
 
         # 2. Normalize dataset (ensured during load, but reinforced here)
         # We use self._risk_df_clean for partial matching

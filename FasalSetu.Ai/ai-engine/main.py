@@ -185,25 +185,31 @@ def analyze_damage(
     base_confidence = float(probs[max_index])
 
     # Rule-Based Overrides (Domain Expertise)
-    # If high cumulative rainfall matches high district vulnerability -> Overwrite to FLOOD
+    # Use 7-day historical rainfall (f_rain_7d) — more reliable than real-time f_rain
+    # Real-time rainfall from OpenWeatherMap is often 0 and causes false DROUGHT overrides
     if f_rain_7d > 100 and f_dist_f > 0.6:
         prediction = "FLOOD"
-        logger.info("Rule-based override: FLOOD detected (High Rain + High Risk)")
-    
-    # If low rainfall matches high drought vulnerability -> Overwrite to DROUGHT
-    elif f_rain < 5 and f_dist_d > 0.6:
+        logger.info("Rule-based override: FLOOD detected (High 7d Rain + High Flood Risk)")
+    elif f_rain_7d < 10 and f_dist_d > 0.6:
+        # Only override to DROUGHT if 7-day rain is truly low (< 10mm over the week)
         prediction = "DROUGHT"
-        logger.info("Rule-based override: DROUGHT detected (Low Rain + High Risk)")
+        logger.info("Rule-based override: DROUGHT detected (Low 7d Rain + High Drought Risk)")
 
-    # 5. Calibrated Confidence Logic (Fixing Overconfidence)
-    # Formula: confidence = base_confidence * (0.6 + flood_risk * 0.4)
-    confidence = base_confidence * (0.6 + f_dist_f * 0.4)
+    # 5. Calibrated Confidence Logic
+    # Use the winning prediction's own risk score for confidence calibration
+    if prediction == "FLOOD":
+        risk_score = f_dist_f
+    elif prediction == "DROUGHT":
+        risk_score = f_dist_d
+    else:
+        risk_score = max(f_dist_f, f_dist_d)
+    confidence = base_confidence * (0.6 + risk_score * 0.4)
 
-    # Apply environmental likelihood modifiers (Rainfall / History)
+    # Apply environmental likelihood modifiers
     likelihood_modifier = 1.0
-    if f_dist_f > 0.6 and f_rain_7d > 100:
+    if prediction == "FLOOD" and f_dist_f > 0.6 and f_rain_7d > 100:
         likelihood_modifier += 0.1
-    elif f_dist_d > 0.6 and f_rain < 5:
+    elif prediction == "DROUGHT" and f_dist_d > 0.6 and f_rain_7d < 10:
         likelihood_modifier += 0.1
     
     # Final combined confidence
