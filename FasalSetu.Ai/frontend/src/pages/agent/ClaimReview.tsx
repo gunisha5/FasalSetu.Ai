@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, CheckCircle, XCircle, Clock, AlertCircle,
-  Loader2, User, MapPin, Cpu, ShieldCheck, TrendingUp,
+  Loader2, User, MapPin, Cpu, ShieldCheck,
   Coins, ChevronDown, Download, Info
 } from 'lucide-react';
 import { api } from '../../utils/api';
@@ -140,11 +140,11 @@ export default function ClaimReview() {
         totalSumInsured: data.totalSumInsured,
         farmAreaSnapshot: data.farmAreaSnapshot,
         dateOfLoss: data.dateOfLoss,
-        // Use stored coverageApplied directly — do NOT back-calculate
-        coverageApplied: (data as any).coverageApplied ?? undefined,
+        // Use stored coverageApplied directly from DB
+        coverageApplied: data.coverageApplied,
         policySummary: {
           sumInsured: data.totalSumInsured ?? 0,
-          coverageUsed: (data as any).coverageApplied ?? 0.1,
+          coverageUsed: data.coverageApplied ?? 0.1,
         },
       } as Claim;
 
@@ -176,8 +176,8 @@ export default function ClaimReview() {
   const confidence    = data.aiConfidence ?? 0;
   const confidencePct = Math.round(confidence * 100);
   const isLowConf     = confidence < 0.5;
-  // aiDamageScore is stored as a fraction (0.0–1.0), convert to percentage for display
-  const damage        = data.aiDamageScore != null ? data.aiDamageScore * 100 : 0;
+  // aiDamageScore is stored as a percentage (e.g., 60.36) — do NOT multiply by 100
+  const damage        = data.aiDamageScore ?? 0;
 
   return (
     <div className="space-y-6 pb-10">
@@ -334,8 +334,10 @@ export default function ClaimReview() {
                 <p className="text-xl font-black text-white">₹{(data.totalSumInsured || 0).toLocaleString('en-IN')}</p>
               </div>
               <div className="bg-white/5 p-4 rounded-xl">
-                <p className="text-xs text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><TrendingUp size={11} /> Damage %</p>
-                <p className="text-xl font-black text-white">{damage.toFixed(2)}%</p>
+                <p className="text-xs text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><ShieldCheck size={11} /> Coverage Factor</p>
+                <p className="text-xl font-black text-white">
+                  {data.coverageApplied != null ? `${Math.round(data.coverageApplied * 100)}%` : '—'}
+                </p>
               </div>
               <div className="bg-brand-500/10 p-4 rounded-xl border border-brand-500/20">
                 <p className="text-xs text-brand-400 uppercase tracking-widest mb-1 flex items-center gap-1"><CheckCircle size={11} /> Est. Payout</p>

@@ -110,9 +110,13 @@ export const mapClaim = (data: any): Claim => {
     estimatedClaim:  data.estimatedClaim  || data.estimated_claim  || data.estimatedPayout || data.estimated_payout,
     damagePercent:   data.damagePercent   || data.damage_percent   || data.aiDamageScore   || data.ai_damage_score,
     
-    // Insurance Details
-    coverageApplied: data.coverageApplied || data.coverage_applied,
-    totalSumInsured: data.totalSumInsured || data.total_sum_insured,
+    // Insurance Details — also check nested policy_summary for coverage
+    coverageApplied: data.coverageApplied || data.coverage_applied 
+                     || data.policy_summary?.coverage_used 
+                     || data.policySummary?.coverageUsed,
+    totalSumInsured: data.totalSumInsured || data.total_sum_insured
+                     || data.policy_summary?.sum_insured
+                     || data.policySummary?.sumInsured,
     
     // Risk & Weather Details
     floodRisk:       data.floodRisk       || data.flood_risk,
