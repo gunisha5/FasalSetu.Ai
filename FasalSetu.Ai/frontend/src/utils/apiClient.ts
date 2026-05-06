@@ -75,36 +75,62 @@ export interface Claim {
   totalSumInsured?: number;
   farmAreaSnapshot?: number;
   estimatedPayout?: number;
-  coverageApplied?: number; // Added
+  coverageApplied?: number;
   rainfallMm?: number;
   rainfall7d?: number;
   tempAvg?: number;
   floodRisk?: number;
   droughtRisk?: number;
   prediction?: string;
-  damagePercent?: number; // Renamed from damage_percent
-  estimatedClaim?: number; // Renamed from estimated_claim
-  policySummary?: { // Renamed from policy_summary
+  damagePercent?: number;
+  estimatedClaim?: number;
+  policySummary?: {
     sumInsured: number;
     coverageUsed: number;
   };
   explanation?: string;
   warning?: string;
+  agentRemark?: string;
 }
 
-export const mapClaim = (data: any): Claim => ({
-  ...data,
-  aiDamageScore:   data.aiDamageScore || data.ai_damage_score,
-  aiConfidence:    data.aiConfidence || data.confidence || data.ai_confidence,
-  estimatedPayout: data.estimatedPayout || data.estimated_payout,
-  estimatedClaim:  data.estimatedClaim || data.estimated_claim,
-  damagePercent:   data.damagePercent || data.damage_percent,
-  coverageApplied: data.coverageApplied || data.coverage_applied,
-  policySummary:   data.policySummary || data.policy_summary ? {
-    sumInsured:    data.policySummary?.sumInsured || data.policy_summary?.sum_insured,
-    coverageUsed:  data.policySummary?.coverageUsed || data.policy_summary?.coverage_used,
-  } : undefined
-});
+/**
+ * Robust mapper that converts snake_case backend fields to camelCase frontend fields.
+ */
+export const mapClaim = (data: any): Claim => {
+  if (!data) return data;
+  return {
+    ...data,
+    // Standard Mappings
+    aiDamageScore:   data.aiDamageScore   || data.ai_damage_score,
+    aiConfidence:    data.aiConfidence    || data.ai_confidence || data.confidence,
+    aiReasoning:     data.aiReasoning     || data.ai_reasoning || data.explanation,
+    
+    // Payout & Damage Mappings
+    estimatedPayout: data.estimatedPayout || data.estimated_payout || data.estimatedClaim || data.estimated_claim,
+    estimatedClaim:  data.estimatedClaim  || data.estimated_claim  || data.estimatedPayout || data.estimated_payout,
+    damagePercent:   data.damagePercent   || data.damage_percent   || data.aiDamageScore   || data.ai_damage_score,
+    
+    // Insurance Details
+    coverageApplied: data.coverageApplied || data.coverage_applied,
+    totalSumInsured: data.totalSumInsured || data.total_sum_insured,
+    
+    // Risk & Weather Details
+    floodRisk:       data.floodRisk       || data.flood_risk,
+    droughtRisk:     data.droughtRisk     || data.drought_risk,
+    rainfallMm:      data.rainfallMm      || data.rainfall_mm || data.rainfall_current,
+    rainfall7d:      data.rainfall7d      || data.rainfall_7d,
+    tempAvg:         data.tempAvg         || data.temp_avg,
+    
+    // Nested Summary Handling
+    policySummary:   data.policySummary || (data.policy_summary ? {
+      sumInsured:    data.policy_summary.sum_insured || data.policy_summary.sumInsured,
+      coverageUsed:  data.policy_summary.coverage_used || data.policy_summary.coverageUsed || data.coverage_applied,
+    } : undefined),
+    
+    // Agent Remarks
+    agentRemark:     data.agentRemark     || data.agent_remark,
+  };
+};
 
 export const claimApi = {
   getAll: (farmerId: number) =>

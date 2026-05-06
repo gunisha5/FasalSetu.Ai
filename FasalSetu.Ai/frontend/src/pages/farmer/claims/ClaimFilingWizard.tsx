@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Camera, UploadCloud, CheckCircle, ShieldAlert, Cpu, Loader2, MapPin, Trash2, FileText, CloudRain, Sun, Shrub, AlertTriangle } from 'lucide-react';
-import { claimApi, authApi, farmApi, aiApi, type Farm } from '../../../utils/apiClient';
+import { claimApi, authApi, farmApi, aiApi, mapClaim, type Farm } from '../../../utils/apiClient';
 import { useAuthStore } from '../../../store/authStore';
 import { useUIStore } from '../../../store/uiStore';
 import ErrorBanner from '../../../components/ErrorBanner';
@@ -96,7 +96,9 @@ export default function ClaimFilingWizard() {
       // 3. Call AI Engine for immediate analysis
       console.log("Calling AI API...");
       const aiRes = await aiApi.predict(predictData);
-      const aiData = aiRes.data;
+      
+      // Use the robust mapper to clean up the AI response (converts snake_case to camelCase)
+      const mappedAiData = mapClaim(aiRes.data);
 
       // 4. Save Claim to Backend (Java)
       const claimRes = await claimApi.file({ 
@@ -105,24 +107,26 @@ export default function ClaimFilingWizard() {
         calamityType: formData.calamityType,
         dateOfLoss: formData.dateOfLoss,
         sumInsuredPerAcre: formData.policyDetails.sumInsuredPerAcre,
-        totalSumInsured: aiData.policySummary?.sumInsured || aiData.policy_summary?.sum_insured || formData.policyDetails.totalSumInsured,
+        totalSumInsured: mappedAiData.totalSumInsured || mappedAiData.policySummary?.sumInsured || formData.policyDetails.totalSumInsured,
         farmAreaSnapshot: selectedFarm?.areaAcres || 0,
-        // Sync AI results
-        prediction: aiData.prediction,
-        aiConfidence: aiData.confidence || aiData.aiConfidence,
-        damagePercent: aiData.damage_percent || aiData.damagePercent,
-        estimatedClaim: aiData.estimated_claim || aiData.estimatedClaim,
-        explanation: aiData.explanation,
-        coverageApplied: aiData.policySummary?.coverageUsed || aiData.policy_summary?.coverage_used,
-        rainfallMm: aiData.features?.rainfall_current,
-        rainfall7d: aiData.features?.rainfall_7d,
-        floodRisk: aiData.features?.flood_risk,
-        droughtRisk: aiData.features?.drought_risk
+        
+        // Use clean camelCase properties from the mapped AI data
+        prediction: mappedAiData.prediction,
+        aiConfidence: mappedAiData.aiConfidence,
+        damagePercent: mappedAiData.damagePercent,
+        estimatedClaim: mappedAiData.estimatedClaim,
+        explanation: mappedAiData.explanation,
+        coverageApplied: mappedAiData.coverageApplied,
+        
+        rainfallMm: mappedAiData.rainfallMm,
+        rainfall7d: mappedAiData.rainfall7d,
+        floodRisk: mappedAiData.floodRisk,
+        droughtRisk: mappedAiData.droughtRisk
       });
 
       // 5. Navigate to Result Page with immediate data
       navigate(`/farmer/claims/${claimRes.data.id}`, { 
-        state: { result: { ...claimRes.data, ...aiData } } 
+        state: { result: { ...claimRes.data, ...mappedAiData } } 
       });
 
     } catch (err: any) {
